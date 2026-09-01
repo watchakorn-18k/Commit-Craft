@@ -3,6 +3,7 @@ import * as vscode from 'vscode';
 export enum ConfigKeys {
   AI_PROVIDER = 'AI_PROVIDER',
   AI_COMMIT_LANGUAGE = 'AI_COMMIT_LANGUAGE',
+  DISPLAY_LANGUAGE = 'DISPLAY_LANGUAGE',
   AI_COMMIT_SYSTEM_PROMPT = 'AI_COMMIT_SYSTEM_PROMPT',
   COMMIT_STYLE = 'COMMIT_STYLE',
   EMOJI_ENABLED = 'EMOJI_ENABLED',
@@ -227,26 +228,33 @@ export const PROVIDERS: Record<string, ProviderDefinition> = {
   }
 };
 
+export const UI_DISPLAY_LANGUAGES = [
+  { code: 'en', label: 'English', description: 'English (Default)' },
+  { code: 'th', label: 'Thai', description: 'ภาษาไทย' },
+  { code: 'zh', label: 'Simplified Chinese', description: '简体中文' },
+  { code: 'ja', label: 'Japanese', description: '日本語' }
+];
+
 export const SUPPORTED_LANGUAGES = [
-  { label: 'Thai', description: 'ไทย' },
+  { label: 'Thai', description: 'ภาษาไทย (Thai)' },
   { label: 'English', description: 'English (Default)' },
-  { label: 'Simplified Chinese', description: '简体中文' },
-  { label: 'Traditional Chinese', description: '繁體中文' },
-  { label: 'Japanese', description: '日本語' },
-  { label: 'Korean', description: '한국어' },
-  { label: 'Spanish', description: 'Español' },
-  { label: 'French', description: 'Français' },
-  { label: 'German', description: 'Deutsch' },
-  { label: 'Portuguese', description: 'Português' },
-  { label: 'Russian', description: 'Русский' },
-  { label: 'Vietnamese', description: 'Tiếng Việt' },
+  { label: 'Simplified Chinese', description: '简体中文 (Chinese Simplified)' },
+  { label: 'Traditional Chinese', description: '繁體中文 (Chinese Traditional)' },
+  { label: 'Japanese', description: '日本語 (Japanese)' },
+  { label: 'Korean', description: '한국어 (Korean)' },
+  { label: 'Spanish', description: 'Español (Spanish)' },
+  { label: 'French', description: 'Français (French)' },
+  { label: 'German', description: 'Deutsch (German)' },
+  { label: 'Portuguese', description: 'Português (Portuguese)' },
+  { label: 'Russian', description: 'Русский (Russian)' },
+  { label: 'Vietnamese', description: 'Tiếng Việt (Vietnamese)' },
   { label: 'Bahasa', description: 'Bahasa Indonesia / Melayu' },
-  { label: 'Italian', description: 'Italiano' },
-  { label: 'Polish', description: 'Polski' },
-  { label: 'Dutch', description: 'Nederlands' },
-  { label: 'Turkish', description: 'Türkçe' },
-  { label: 'Swedish', description: 'Svenska' },
-  { label: 'Czech', description: 'Česky' }
+  { label: 'Italian', description: 'Italiano (Italian)' },
+  { label: 'Polish', description: 'Polski (Polish)' },
+  { label: 'Dutch', description: 'Nederlands (Dutch)' },
+  { label: 'Turkish', description: 'Türkçe (Turkish)' },
+  { label: 'Swedish', description: 'Svenska (Swedish)' },
+  { label: 'Czech', description: 'Česky (Czech)' }
 ];
 
 export const COMMIT_STYLES = [

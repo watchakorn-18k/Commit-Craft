@@ -33,14 +33,12 @@ export const getMainCommitPrompt = async (options?: PromptOptions) => {
     styleInstruction = `Generate a standard Conventional Commit message with a subject and 1-3 concise bullet points.`;
   }
 
-  const emojiRule = emojiEnabled
-    ? 'Prefix the subject line with a relevant Gitmoji (e.g. feat -> ✨, fix -> 🐛, docs -> 📝, refactor -> ♻️).'
-    : 'Do NOT include any emoji in the commit message.';
+  const emojiRule = 'CRITICAL: Do NOT include any emojis or icons. Keep all output strictly professional and technical.';
 
   return [
     {
       role: 'system',
-      content: `You are a Git commit generator. Analyze the diff and generate a clean, professional Conventional Commit message.
+      content: `You are an expert Git commit generator. Analyze the diff and generate a clean, professional Conventional Commit message.
 
 Rules:
 1. Output ONLY the raw commit message text. No markdown code blocks, quotes, introductions, or explanations.
@@ -67,16 +65,15 @@ export const getMultipleCandidatesPrompt = (
   options?: PromptOptions
 ) => {
   const language = options?.language || 'English';
-  const emoji = options?.emojiEnabled ? 'with Gitmoji' : 'without emoji';
   const issueTag = options?.issueTag ? `Ticket tag: ${options.issueTag}` : '';
 
   return [
     {
       role: 'system',
-      content: `You are a Git commit generator.
-Generate exactly 3 different commit message candidates for the provided diff in JSON format.
+      content: `You are an expert Git commit generator.
+Generate exactly 3 different clean, professional commit message candidates for the provided diff in JSON format.
 Language: ${language}.
-Emoji: ${emoji}.
+Rules: Strictly NO emojis, icons, or decorative fluff. Professional engineering standards.
 ${issueTag}
 
 Output MUST be a valid JSON array of objects:

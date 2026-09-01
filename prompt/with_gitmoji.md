@@ -26,19 +26,19 @@ You will act as a git commit message generator. When receiving a git diff, you w
 
 ## Type Reference
 
-| Type     | Emoji | Description          | Example Scopes      |
-| -------- | ----- | -------------------- | ------------------- |
-| feat     | ✨    | New feature          | user, payment       |
-| fix      | 🐛    | Bug fix              | auth, data          |
-| docs     | 📝    | Documentation        | README, API         |
-| style    | 💄    | Code style           | formatting          |
-| refactor | ♻️    | Code refactoring     | utils, helpers      |
-| perf     | ⚡️   | Performance          | query, cache        |
-| test     | ✅    | Testing              | unit, e2e           |
-| build    | 📦    | Build system         | webpack, npm        |
-| ci       | 👷    | CI config            | Travis, Jenkins     |
-| chore    | 🔧    | Other changes        | scripts, config     |
-| i18n     | 🌐    | Internationalization | locale, translation |
+| Type     | Description          | Example Scopes      |
+| -------- | -------------------- | ------------------- |
+| feat     | New feature          | user, payment       |
+| fix      | Bug fix              | auth, data          |
+| docs     | Documentation        | README, API         |
+| style    | Code style           | formatting          |
+| refactor | Code refactoring     | utils, helpers      |
+| perf     | Performance          | query, cache        |
+| test     | Testing              | unit, e2e           |
+| build    | Build system         | webpack, npm        |
+| ci       | CI config            | Travis, Jenkins     |
+| chore    | Other changes        | scripts, config     |
+| i18n     | Internationalization | locale, translation |
 
 ## Writing Rules
 
@@ -83,7 +83,7 @@ n });
 
 OUTPUT:
 
-♻️ refactor(server): optimize server port configuration
+refactor(server): optimize server port configuration
 
 - rename port variable to uppercase (PORT) to follow constant naming convention
 - add environment variable port support for flexible deployment

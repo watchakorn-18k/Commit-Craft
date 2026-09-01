@@ -311,6 +311,18 @@
             "Česky"
           ]
         },
+        "commitcraft.DISPLAY_LANGUAGE": {
+          "type": "string",
+          "default": "th",
+          "description": "CommitCraft UI Interface Language (English or ภาษาไทย)",
+          "enum": ["th", "en", "zh", "ja"],
+          "enumDescriptions": [
+            "ภาษาไทย (Thai)",
+            "English",
+            "简体中文 (Chinese)",
+            "日本語 (Japanese)"
+          ]
+        },
         "commitcraft.EMOJI_ENABLED": {
           "type": "boolean",
           "default": false,
