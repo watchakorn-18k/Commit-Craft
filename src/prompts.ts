@@ -329,3 +329,74 @@ Example outputs:
   ];
 };
 
+/**
+ * Builds prompt for resolving Git Merge Conflict blocks
+ */
+export const getMergeConflictPrompt = (
+  filePath: string,
+  conflictSnippet: string,
+  language: string = 'English'
+) => {
+  return [
+    {
+      role: 'system',
+      content: `You are a Principal Software Engineer resolving a Git merge conflict in file: "${filePath}".
+Analyze the conflict block containing "<<<<<<< HEAD", "=======", and ">>>>>>>":
+- Understand the intent of the Current change (HEAD)
+- Understand the intent of the Incoming change
+- Produce a clean, syntactically correct, and bug-free merged resolution that combines the logic of both sides without losing vital functionality.
+
+Language for any explanation: ${language}.
+Rules:
+1. Remove all conflict markers (<<<<<<<, =======, >>>>>>>).
+2. Output ONLY the resolved code block. Do NOT include explanations, markdown code block backticks, or notes.
+`
+    },
+    {
+      role: 'user',
+      content: `Conflicted Code Block:\n\n${conflictSnippet}`
+    }
+  ];
+};
+
+/**
+ * Builds prompt for Semantic Versioning and Git Tag recommendations
+ */
+export const getReleaseTagPrompt = (
+  currentTag: string,
+  commits: string,
+  language: string = 'English'
+) => {
+  return [
+    {
+      role: 'system',
+      content: `You are a DevOps and release release engineering expert adhering to Semantic Versioning (SemVer 2.0.0).
+Analyze the commits since current tag "${currentTag || 'none'}":
+- If there are breaking changes (e.g. BREAKING CHANGE or feat!/fix!), recommend a MAJOR bump.
+- If there are new features (feat/feature), recommend a MINOR bump.
+- If there are only bug fixes, chores, refactors, docs, recommend a PATCH bump.
+
+Current Tag: ${currentTag || 'v0.0.0'}
+Language: ${language}.
+Rules: Strictly NO emojis.
+
+Output valid JSON matching this schema:
+{
+  "recommendedTag": "v1.2.0",
+  "bumpType": "minor",
+  "reason": "Brief explanation of why this version bump is recommended",
+  "highlights": [
+    "Key feature 1",
+    "Key fix 1"
+  ]
+}
+`
+    },
+    {
+      role: 'user',
+      content: `Commit Log since ${currentTag || 'initial commit'}:\n\n${commits}`
+    }
+  ];
+};
+
+

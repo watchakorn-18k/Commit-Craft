@@ -474,3 +474,114 @@ export async function gitStashPop(repo: any): Promise<void> {
   await git.stash(['pop']);
 }
 
+/**
+ * Get details of the latest commit (HEAD)
+ */
+export async function getLatestCommit(
+  repo: any
+): Promise<{ hash: string; message: string; author_name: string; date: string } | null> {
+  try {
+    const rootPath =
+      repo?.rootUri?.fsPath || vscode.workspace.workspaceFolders?.[0].uri.fsPath;
+    if (!rootPath) {
+      return null;
+    }
+    const git = simpleGit(rootPath);
+    const log = await git.log({ maxCount: 1 });
+    if (log.latest) {
+      return {
+        hash: log.latest.hash,
+        message: log.latest.message,
+        author_name: log.latest.author_name,
+        date: log.latest.date
+      };
+    }
+    return null;
+  } catch (error) {
+    Logger.error('Error fetching latest commit:', error);
+    return null;
+  }
+}
+
+/**
+ * Safely undo the latest commit, keeping all code modifications intact.
+ */
+export async function gitSafeUndoCommit(
+  repo: any,
+  mode: 'soft' | 'mixed' = 'soft'
+): Promise<{ message: string; hash: string } | null> {
+  const rootPath =
+    repo?.rootUri?.fsPath || vscode.workspace.workspaceFolders?.[0].uri.fsPath;
+  if (!rootPath) {
+    throw new Error('No workspace folder found');
+  }
+  const git = simpleGit(rootPath);
+  const latest = await getLatestCommit(repo);
+  if (!latest) {
+    throw new Error('No commits available to undo.');
+  }
+
+  if (mode === 'soft') {
+    await git.reset(['--soft', 'HEAD~1']);
+  } else {
+    await git.reset(['HEAD~1']);
+  }
+
+  return { message: latest.message, hash: latest.hash };
+}
+
+/**
+ * Get list of currently conflicted file paths
+ */
+export async function getConflictedFiles(repo: any): Promise<string[]> {
+  try {
+    const rootPath =
+      repo?.rootUri?.fsPath || vscode.workspace.workspaceFolders?.[0].uri.fsPath;
+    if (!rootPath) {
+      return [];
+    }
+    const git = simpleGit(rootPath);
+    const status = await git.status();
+    return status.conflicted || [];
+  } catch (error) {
+    Logger.error('Error fetching conflicted files:', error);
+    return [];
+  }
+}
+
+/**
+ * Get all tags sorted by creation date
+ */
+export async function getGitTags(repo: any): Promise<string[]> {
+  try {
+    const rootPath =
+      repo?.rootUri?.fsPath || vscode.workspace.workspaceFolders?.[0].uri.fsPath;
+    if (!rootPath) {
+      return [];
+    }
+    const git = simpleGit(rootPath);
+    const tags = await git.tags({ '--sort': '-creatordate' });
+    return tags.all || [];
+  } catch (error) {
+    Logger.error('Error fetching git tags:', error);
+    return [];
+  }
+}
+
+/**
+ * Create a new git tag
+ */
+export async function gitCreateTag(repo: any, tagName: string, message?: string): Promise<void> {
+  const rootPath =
+    repo?.rootUri?.fsPath || vscode.workspace.workspaceFolders?.[0].uri.fsPath;
+  if (!rootPath) {
+    throw new Error('No workspace folder found');
+  }
+  const git = simpleGit(rootPath);
+  if (message) {
+    await git.addAnnotatedTag(tagName, message);
+  } else {
+    await git.addTag(tagName);
+  }
+}
+

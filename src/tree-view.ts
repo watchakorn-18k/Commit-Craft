@@ -206,6 +206,45 @@ export class CommitCraftTreeDataProvider
               title: 'Smart Git Stash'
             }
           }
+        ),
+        new CommitCraftTreeItem(
+          isThai ? 'ย้อนกลับ Commit ล่าสุด (Safe Undo)' : 'Safe Undo Last Commit',
+          vscode.TreeItemCollapsibleState.None,
+          {
+            description: isThai ? 'กู้คืนโค้ดปลอดภัย' : 'Zero data loss',
+            tooltip: isThai ? 'ย้อนกลับ Commit ล่าสุดโดยคงโค้ดไว้ครบถ้วนและกู้ข้อความเดิมกลับมา' : 'Undo latest commit safely, keep modifications, and restore message',
+            iconPath: new vscode.ThemeIcon('discard'),
+            command: {
+              command: 'commitcraft.safeUndo',
+              title: 'Safe Undo Last Commit'
+            }
+          }
+        ),
+        new CommitCraftTreeItem(
+          isThai ? 'แก้ Merge Conflict ด้วย AI' : 'Resolve Conflicts with AI',
+          vscode.TreeItemCollapsibleState.None,
+          {
+            description: isThai ? 'รวมโค้ดฉลาด' : 'Intelligent merge',
+            tooltip: isThai ? 'ให้ AI วิเคราะห์โค้ดทั้งสองฝั่งและรวมแก้ปัญหา Conflict ให้อัตโนมัติ' : 'Analyze conflict blocks and auto-resolve logic cleanly with AI',
+            iconPath: new vscode.ThemeIcon('git-pull-request-go-to-changes'),
+            command: {
+              command: 'commitcraft.resolveConflict',
+              title: 'Resolve Conflicts with AI'
+            }
+          }
+        ),
+        new CommitCraftTreeItem(
+          isThai ? 'แนะนำเลข Release & Tag (SemVer)' : 'Suggest Release Tag (SemVer)',
+          vscode.TreeItemCollapsibleState.None,
+          {
+            description: isThai ? 'Semantic Version' : 'Semantic Version',
+            tooltip: isThai ? 'วิเคราะห์ประวัติ Commit เพื่อแนะนำเลขเวอร์ชัน Major/Minor/Patch และสร้าง Tag' : 'Analyze commits to recommend SemVer bump and create git tag',
+            iconPath: new vscode.ThemeIcon('tag'),
+            command: {
+              command: 'commitcraft.suggestReleaseTag',
+              title: 'Suggest Release Tag'
+            }
+          }
         )
       ];
     }

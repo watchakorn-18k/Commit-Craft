@@ -4,6 +4,9 @@ import { reviewStagedChanges } from './review-utils';
 import { generatePRDescription } from './pr-utils';
 import { suggestBranchName } from './branch-utils';
 import { generateChangelog } from './changelog-utils';
+import { safeUndoCommit } from './undo-utils';
+import { resolveMergeConflicts } from './conflict-utils';
+import { suggestReleaseTag } from './tag-utils';
 import {
   ConfigKeys,
   ConfigurationManager,
@@ -78,6 +81,21 @@ export class CommandManager {
     this.registerCommand('commitcraft.popStash', popStash);
     this.registerCommand('commit-craft-ai.popStash', popStash);
     this.registerCommand('ai-commit.popStash', popStash);
+
+    // 6.3. Git Safe Undo / Rollback
+    this.registerCommand('commitcraft.safeUndo', safeUndoCommit);
+    this.registerCommand('commit-craft-ai.safeUndo', safeUndoCommit);
+    this.registerCommand('ai-commit.safeUndo', safeUndoCommit);
+
+    // 6.4. AI Merge Conflict Resolver
+    this.registerCommand('commitcraft.resolveConflict', resolveMergeConflicts);
+    this.registerCommand('commit-craft-ai.resolveConflict', resolveMergeConflicts);
+    this.registerCommand('ai-commit.resolveConflict', resolveMergeConflicts);
+
+    // 6.5. Semantic Version & Tag Suggester
+    this.registerCommand('commitcraft.suggestReleaseTag', suggestReleaseTag);
+    this.registerCommand('commit-craft-ai.suggestReleaseTag', suggestReleaseTag);
+    this.registerCommand('ai-commit.suggestReleaseTag', suggestReleaseTag);
 
     // 7. Quick Setup Wizard
     const runSetup = async () => {
@@ -237,6 +255,24 @@ export class CommandManager {
             action: async () => smartStash()
           },
           {
+            label: '$(discard) ย้อนกลับ Commit ล่าสุด (Safe Undo)',
+            description: 'กู้คืนโค้ดปลอดภัย',
+            detail: 'ย้อนกลับ Commit ล่าสุดโดยคงโค้ดไว้ครบถ้วนและกู้ข้อความเดิมกลับมา',
+            action: async () => safeUndoCommit()
+          },
+          {
+            label: '$(git-pull-request-go-to-changes) แก้ Merge Conflict ด้วย AI (Conflict Resolver)',
+            description: 'Intelligent Merge',
+            detail: 'ให้ AI วิเคราะห์โค้ดทั้งสองฝั่งและรวมแก้ปัญหา Conflict ให้อัตโนมัติ',
+            action: async () => resolveMergeConflicts()
+          },
+          {
+            label: '$(tag) แนะนำเลข Release Version & Tag (SemVer Suggester)',
+            description: 'Semantic Versioning',
+            detail: 'วิเคราะห์ประวัติ Commit เพื่อแนะนำเลขเวอร์ชัน Major/Minor/Patch และสร้าง Tag',
+            action: async () => suggestReleaseTag()
+          },
+          {
             label: '$(sparkle) ตัวช่วยตั้งค่าด่วน (Setup Wizard)',
             description: `ปัจจุบัน: ${provider.name} (${activeModel})`,
             detail: 'เปลี่ยน AI Provider, API key, โมเดล หรือภาษาทีละขั้นตอน',
@@ -309,6 +345,24 @@ export class CommandManager {
             description: 'Save WIP with AI',
             detail: 'Analyze uncommitted changes and auto-generate stash message in 1 click',
             action: async () => smartStash()
+          },
+          {
+            label: '$(discard) Safe Undo Last Commit (Rollback)',
+            description: 'Zero Data Loss',
+            detail: 'Undo the last commit safely, keep modifications, and restore message',
+            action: async () => safeUndoCommit()
+          },
+          {
+            label: '$(git-pull-request-go-to-changes) Resolve Merge Conflicts with AI',
+            description: 'Smart Merge',
+            detail: 'Analyze conflict blocks and auto-resolve logic cleanly with AI',
+            action: async () => resolveMergeConflicts()
+          },
+          {
+            label: '$(tag) Suggest Release Version & Tag (SemVer)',
+            description: 'Semantic Versioning',
+            detail: 'Analyze commits to recommend SemVer bump (Major/Minor/Patch) and tag',
+            action: async () => suggestReleaseTag()
           },
           {
             label: '$(sparkle) Quick Setup Wizard',

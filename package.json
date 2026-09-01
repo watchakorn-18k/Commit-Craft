@@ -125,6 +125,21 @@
         "title": "CommitCraft: เรียกคืนโค้ดจาก Stash (Stash Pop)"
       },
       {
+        "command": "commitcraft.safeUndo",
+        "icon": "$(discard)",
+        "title": "CommitCraft: ย้อนกลับ Commit ล่าสุด (Safe Undo)"
+      },
+      {
+        "command": "commitcraft.resolveConflict",
+        "icon": "$(git-pull-request-go-to-changes)",
+        "title": "CommitCraft: แก้ Merge Conflict ด้วย AI (Resolve Conflicts)"
+      },
+      {
+        "command": "commitcraft.suggestReleaseTag",
+        "icon": "$(tag)",
+        "title": "CommitCraft: แนะนำเลข Release Tag (SemVer Suggester)"
+      },
+      {
         "command": "commitcraft.quickMenu",
         "icon": "$(zap)",
         "title": "CommitCraft: เมนูด่วน (Quick Action Hub)"
@@ -221,6 +236,10 @@
         }
       ],
       "editor/context": [
+        {
+          "command": "commitcraft.resolveConflict",
+          "group": "1_commitcraft"
+        },
         {
           "command": "commitcraft.reviewChanges",
           "group": "1_commitcraft"
