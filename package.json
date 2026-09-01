@@ -145,6 +145,16 @@
         "title": "CommitCraft: แนะนำเลข Release Tag (SemVer Suggester)"
       },
       {
+        "command": "commitcraft.draftRelease",
+        "icon": "$(tag)",
+        "title": "CommitCraft: แนะนำ Tag & ร่าง Release บน GitHub/GitLab (Draft Release)"
+      },
+      {
+        "command": "commitcraft.bisectBugTracker",
+        "icon": "$(bug)",
+        "title": "CommitCraft: ตามล่าหาจุดเกิดบั๊ก (AI Git Bisect Bug Tracker)"
+      },
+      {
         "command": "commitcraft.openDashboard",
         "icon": "$(pie-chart)",
         "title": "CommitCraft: เปิดแดชบอร์ดกราฟวงกลม & สถิติ (Visual Dashboard)"

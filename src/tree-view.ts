@@ -239,6 +239,32 @@ export class CommitCraftTreeDataProvider
     if (element.category === 'branchRelease') {
       return [
         new CommitCraftTreeItem(
+          isThai ? 'ตามล่าหาจุดเกิดบั๊ก (AI Git Bisect Bug Tracker)' : 'AI Git Bisect Bug Tracker',
+          vscode.TreeItemCollapsibleState.None,
+          {
+            description: isThai ? 'AI ชี้เป้าบั๊ก' : 'Pinpoint bug',
+            tooltip: isThai ? 'ให้ AI ช่วยวิเคราะห์ Diff ทีละสเต็ปเพื่อหา Commit และคนที่ทำให้เกิดบั๊ก' : 'Step-by-step AI guided git bisect to find the culprit commit and author',
+            iconPath: new vscode.ThemeIcon('bug'),
+            command: {
+              command: 'commitcraft.bisectBugTracker',
+              title: 'AI Git Bisect Bug Tracker'
+            }
+          }
+        ),
+        new CommitCraftTreeItem(
+          isThai ? 'แนะนำ Release Tag & ร่าง Release (Draft Release)' : 'Suggest Release Tag & Draft Release',
+          vscode.TreeItemCollapsibleState.None,
+          {
+            description: isThai ? 'SemVer & GitHub/GitLab' : 'SemVer & Web',
+            tooltip: isThai ? 'วิเคราะห์ประวัติ Commit แนะนำเลขเวอร์ชัน และเปิดหน้าร่าง Release บนเว็บทันที' : 'Analyze commits to recommend SemVer bump and draft web release',
+            iconPath: new vscode.ThemeIcon('tag'),
+            command: {
+              command: 'commitcraft.draftRelease',
+              title: 'Suggest Release Tag & Draft Release'
+            }
+          }
+        ),
+        new CommitCraftTreeItem(
           isThai ? 'สร้างคำอธิบาย Pull Request (PR Description)' : 'Generate PR Description',
           vscode.TreeItemCollapsibleState.None,
           {
@@ -248,19 +274,6 @@ export class CommitCraftTreeDataProvider
             command: {
               command: 'commitcraft.generatePR',
               title: 'Generate PR Description'
-            }
-          }
-        ),
-        new CommitCraftTreeItem(
-          isThai ? 'แนะนำเลข Release & Tag (SemVer)' : 'Suggest Release Tag (SemVer)',
-          vscode.TreeItemCollapsibleState.None,
-          {
-            description: isThai ? 'Semantic Version' : 'Semantic Version',
-            tooltip: isThai ? 'วิเคราะห์ประวัติ Commit เพื่อแนะนำเลขเวอร์ชัน Major/Minor/Patch และสร้าง Tag' : 'Analyze commits to recommend SemVer bump and create git tag',
-            iconPath: new vscode.ThemeIcon('tag'),
-            command: {
-              command: 'commitcraft.suggestReleaseTag',
-              title: 'Suggest Release Tag'
             }
           }
         ),

@@ -720,4 +720,85 @@ export async function getCommitsForSquash(
   }
 }
 
+/**
+ * Get Remote Origin Web URL for GitHub or GitLab
+ */
+export async function getRemoteOriginUrl(repo: any): Promise<string> {
+  try {
+    const rootPath =
+      repo?.rootUri?.fsPath || vscode.workspace.workspaceFolders?.[0].uri.fsPath;
+    if (!rootPath) {
+      return '';
+    }
+    const git = simpleGit(rootPath);
+    const remotes = await git.getRemotes(true);
+    const origin = remotes.find((r) => r.name === 'origin') || remotes[0];
+    const fetchUrl = origin?.refs?.fetch || origin?.refs?.push || '';
+    if (!fetchUrl) {
+      return '';
+    }
+
+    // Convert SSH or Git URL to Web HTTPS URL
+    // e.g. git@github.com:owner/repo.git -> https://github.com/owner/repo
+    let webUrl = fetchUrl
+      .replace(/^git@([^:]+):/, 'https://$1/')
+      .replace(/\.git$/, '');
+    return webUrl;
+  } catch {
+    return '';
+  }
+}
+
+/**
+ * Start a Git bisect session
+ */
+export async function gitBisectStart(
+  repo: any,
+  badCommit: string = 'HEAD',
+  goodCommit: string
+): Promise<string> {
+  const rootPath =
+    repo?.rootUri?.fsPath || vscode.workspace.workspaceFolders?.[0].uri.fsPath;
+  if (!rootPath) {
+    throw new Error('No workspace folder found');
+  }
+  const git = simpleGit(rootPath);
+  await git.raw(['bisect', 'reset']).catch(() => null);
+  await git.raw(['bisect', 'start']);
+  await git.raw(['bisect', 'bad', badCommit]);
+  const output = await git.raw(['bisect', 'good', goodCommit]);
+  return output;
+}
+
+/**
+ * Mark current bisect commit as good, bad, or skip
+ */
+export async function gitBisectStep(
+  repo: any,
+  verdict: 'good' | 'bad' | 'skip'
+): Promise<string> {
+  const rootPath =
+    repo?.rootUri?.fsPath || vscode.workspace.workspaceFolders?.[0].uri.fsPath;
+  if (!rootPath) {
+    throw new Error('No workspace folder found');
+  }
+  const git = simpleGit(rootPath);
+  const output = await git.raw(['bisect', verdict]);
+  return output;
+}
+
+/**
+ * Reset Git bisect back to original HEAD
+ */
+export async function gitBisectReset(repo: any): Promise<void> {
+  const rootPath =
+    repo?.rootUri?.fsPath || vscode.workspace.workspaceFolders?.[0].uri.fsPath;
+  if (!rootPath) {
+    throw new Error('No workspace folder found');
+  }
+  const git = simpleGit(rootPath);
+  await git.raw(['bisect', 'reset']).catch(() => null);
+}
+
+
 

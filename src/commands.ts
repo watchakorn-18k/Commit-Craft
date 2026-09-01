@@ -10,6 +10,7 @@ import { suggestReleaseTag } from './tag-utils';
 import { translateCommitMessage } from './translate-utils';
 import { cleanGhostBranches } from './branch-cleaner';
 import { summarizeSquashCommits } from './squash-utils';
+import { runGitBisectAssistant } from './bisect-assistant';
 import { GitStatsDashboardPanel } from './stats-dashboard-view';
 import {
   ConfigKeys,
@@ -123,6 +124,16 @@ export class CommandManager {
     this.registerCommand('commitcraft.squashSummary', summarizeSquashCommits);
     this.registerCommand('commit-craft-ai.squashSummary', summarizeSquashCommits);
     this.registerCommand('ai-commit.squashSummary', summarizeSquashCommits);
+
+    // 6.9. AI Git Bisect Bug Tracker
+    this.registerCommand('commitcraft.bisectBugTracker', runGitBisectAssistant);
+    this.registerCommand('commit-craft-ai.bisectBugTracker', runGitBisectAssistant);
+    this.registerCommand('ai-commit.bisectBugTracker', runGitBisectAssistant);
+
+    // 6.10. GitHub / GitLab Release Auto-Draft
+    this.registerCommand('commitcraft.draftRelease', suggestReleaseTag);
+    this.registerCommand('commit-craft-ai.draftRelease', suggestReleaseTag);
+    this.registerCommand('ai-commit.draftRelease', suggestReleaseTag);
 
     // 7. Quick Setup Wizard
     const runSetup = async () => {
@@ -304,16 +315,22 @@ export class CommandManager {
             kind: vscode.QuickPickItemKind.Separator
           },
           {
+            label: '$(bug) ตามล่าหาจุดเกิดบั๊ก (AI Git Bisect Bug Tracker)',
+            description: 'AI ชี้เป้าบั๊ก',
+            detail: 'ให้ AI ช่วยวิเคราะห์ Diff ทีละสเต็ปเพื่อหา Commit และคนที่ทำให้เกิดบั๊ก',
+            action: async () => runGitBisectAssistant()
+          },
+          {
+            label: '$(tag) แนะนำเลข Release Tag & ร่าง Release (Draft Release)',
+            description: 'SemVer & GitHub/GitLab',
+            detail: 'วิเคราะห์ประวัติ Commit แนะนำเลขเวอร์ชัน และเปิดหน้าร่าง Release บนเว็บทันที',
+            action: async () => suggestReleaseTag()
+          },
+          {
             label: '$(git-pull-request) สร้างคำอธิบาย Pull Request (PR Description)',
             description: 'Markdown',
             detail: 'ร่างคำอธิบาย PR สำหรับ GitHub/GitLab จากประวัติ Commit',
             action: async () => vscode.commands.executeCommand('commitcraft.generatePR')
-          },
-          {
-            label: '$(tag) แนะนำเลข Release Version & Tag (SemVer Suggester)',
-            description: 'Semantic Versioning',
-            detail: 'วิเคราะห์ประวัติ Commit เพื่อแนะนำเลขเวอร์ชัน Major/Minor/Patch และสร้าง Tag',
-            action: async () => suggestReleaseTag()
           },
           {
             label: '$(git-merge) สรุปรวมหลาย Commit (Squash & Rebase Summarizer)',
@@ -446,16 +463,22 @@ export class CommandManager {
             kind: vscode.QuickPickItemKind.Separator
           },
           {
+            label: '$(bug) AI Git Bisect Bug Tracker',
+            description: 'Pinpoint Bug Origin',
+            detail: 'Step-by-step AI guided git bisect to find the exact culprit commit and author',
+            action: async () => runGitBisectAssistant()
+          },
+          {
+            label: '$(tag) Suggest Release Tag & Draft Release',
+            description: 'SemVer & GitHub/GitLab',
+            detail: 'Analyze commits to recommend SemVer bump and draft web release',
+            action: async () => suggestReleaseTag()
+          },
+          {
             label: '$(git-pull-request) Generate PR Description',
             description: 'Markdown',
             detail: 'Generate full Pull Request markdown description from branch',
             action: async () => vscode.commands.executeCommand('commitcraft.generatePR')
-          },
-          {
-            label: '$(tag) Suggest Release Version & Tag (SemVer)',
-            description: 'Semantic Versioning',
-            detail: 'Analyze commits to recommend SemVer bump (Major/Minor/Patch) and tag',
-            action: async () => suggestReleaseTag()
           },
           {
             label: '$(git-merge) Synthesize Commits (Squash & Rebase Summarizer)',
