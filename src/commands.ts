@@ -151,67 +151,125 @@ export class CommandManager {
     const configManager = ConfigurationManager.getInstance();
     const provider = configManager.getActiveProvider();
     const activeModel = configManager.getActiveModel();
+    const isThai = configManager.getConfig<string>(ConfigKeys.DISPLAY_LANGUAGE, 'th') === 'th';
 
-    const items: (vscode.QuickPickItem & { action?: () => Promise<any> | any })[] = [
-      {
-        label: '$(git-commit) Generate Commit Message',
-        description: 'Default',
-        detail: 'Analyze staged changes and populate Git commit input box',
-        action: async () => vscode.commands.executeCommand('commitcraft.generate')
-      },
-      {
-        label: '$(list-unordered) Generate 3 Commit Options',
-        description: 'Conventional / Concise / Detailed',
-        detail: 'Generate 3 candidate styles to choose from',
-        action: async () => vscode.commands.executeCommand('commitcraft.generateCandidates')
-      },
-      {
-        label: '$(shield) Pre-Commit Code Review',
-        description: 'Security & Bug Audit',
-        detail: 'Review diff for runtime bugs, credential leaks, and console.logs',
-        action: async () => vscode.commands.executeCommand('commitcraft.reviewChanges')
-      },
-      {
-        label: '$(git-pull-request) Generate PR Description',
-        description: 'Markdown',
-        detail: 'Generate full Pull Request markdown description from branch',
-        action: async () => vscode.commands.executeCommand('commitcraft.generatePR')
-      },
-      {
-        label: '$(git-branch) Suggest Branch Name',
-        description: 'Standard naming',
-        detail: 'Get Git branch name suggestions from code changes',
-        action: async () => vscode.commands.executeCommand('commitcraft.suggestBranch')
-      },
-      {
-        label: '$(notebook) Generate CHANGELOG.md',
-        description: 'Keep a Changelog',
-        detail: 'Auto-generate or update CHANGELOG.md for this release',
-        action: async () => vscode.commands.executeCommand('commitcraft.generateChangelog')
-      },
-      {
-        label: '$(sparkle) Quick Setup Wizard',
-        description: `Current: ${provider.name} (${activeModel})`,
-        detail: 'Change AI Provider, API key, model, or language step-by-step',
-        action: async () => this.runQuickSetupWizard()
-      },
-      {
-        label: '$(hubot) Switch AI Provider',
-        description: provider.name,
-        detail: 'Switch between Gemini, Copilot, OpenAI, Claude, DeepSeek, Ollama...',
-        action: async () => this.runSwitchProvider()
-      },
-      {
-        label: '$(gear) Open Settings Panel',
-        description: 'Interactive UI',
-        detail: 'Open clean, dynamic provider settings panel',
-        action: () => SettingsPanel.createOrShow(this.context.extensionUri)
-      }
-    ];
+    const items: (vscode.QuickPickItem & { action?: () => Promise<any> | any })[] = isThai
+      ? [
+          {
+            label: '$(git-commit) สร้างข้อความ Commit (Generate Commit)',
+            description: '1-Click',
+            detail: 'วิเคราะห์การเปลี่ยนแปลงและใส่ข้อความลงใน Git commit input box ทันที',
+            action: async () => vscode.commands.executeCommand('commitcraft.generate')
+          },
+          {
+            label: '$(list-unordered) สร้าง 3 ตัวเลือก Commit (3 Options)',
+            description: 'เลือกสไตล์',
+            detail: 'สร้างตัวเลือก 3 รูปแบบ (Conventional, สั้นกระชับ, ละเอียด)',
+            action: async () => vscode.commands.executeCommand('commitcraft.generateCandidates')
+          },
+          {
+            label: '$(shield) ตรวจทานโค้ดก่อน Commit (Code Review)',
+            description: 'ตรวจบั๊ก & ความปลอดภัย',
+            detail: 'สแกนหาข้อผิดพลาด บั๊ก API Key หลุด และ console.log',
+            action: async () => vscode.commands.executeCommand('commitcraft.reviewChanges')
+          },
+          {
+            label: '$(git-pull-request) สร้างคำอธิบาย Pull Request (PR Description)',
+            description: 'Markdown',
+            detail: 'ร่างคำอธิบาย PR สำหรับ GitHub/GitLab จากประวัติ Commit',
+            action: async () => vscode.commands.executeCommand('commitcraft.generatePR')
+          },
+          {
+            label: '$(git-branch) แนะนำชื่อ Branch (Suggest Branch)',
+            description: 'ชื่อมาตรฐาน',
+            detail: 'รับคำแนะนำชื่อ Git branch ตามมาตรฐานจากโค้ดที่แก้',
+            action: async () => vscode.commands.executeCommand('commitcraft.suggestBranch')
+          },
+          {
+            label: '$(notebook) สร้าง/อัปเดต CHANGELOG.md',
+            description: 'Keep a Changelog',
+            detail: 'สร้างหรืออัปเดตไฟล์ CHANGELOG.md ของเวอร์ชันนี้อัตโนมัติ',
+            action: async () => vscode.commands.executeCommand('commitcraft.generateChangelog')
+          },
+          {
+            label: '$(sparkle) ตัวช่วยตั้งค่าด่วน (Setup Wizard)',
+            description: `ปัจจุบัน: ${provider.name} (${activeModel})`,
+            detail: 'เปลี่ยน AI Provider, API key, โมเดล หรือภาษาทีละขั้นตอน',
+            action: async () => this.runQuickSetupWizard()
+          },
+          {
+            label: '$(hubot) สลับผู้ให้บริการ AI (Switch Provider)',
+            description: provider.name,
+            detail: 'สลับระหว่าง Gemini, Copilot, OpenAI, Claude, DeepSeek, Ollama...',
+            action: async () => this.runSwitchProvider()
+          },
+          {
+            label: '$(gear) เปิดหน้าตั้งค่า (Settings Panel)',
+            description: 'แผงควบคุม UI',
+            detail: 'เปิดหน้าต่างการตั้งค่า CommitCraft แบบละเอียด',
+            action: () => SettingsPanel.createOrShow(this.context.extensionUri)
+          }
+        ]
+      : [
+          {
+            label: '$(git-commit) Generate Commit Message',
+            description: 'Default',
+            detail: 'Analyze staged changes and populate Git commit input box',
+            action: async () => vscode.commands.executeCommand('commitcraft.generate')
+          },
+          {
+            label: '$(list-unordered) Generate 3 Commit Options',
+            description: 'Conventional / Concise / Detailed',
+            detail: 'Generate 3 candidate styles to choose from',
+            action: async () => vscode.commands.executeCommand('commitcraft.generateCandidates')
+          },
+          {
+            label: '$(shield) Pre-Commit Code Review',
+            description: 'Security & Bug Audit',
+            detail: 'Review diff for runtime bugs, credential leaks, and console.logs',
+            action: async () => vscode.commands.executeCommand('commitcraft.reviewChanges')
+          },
+          {
+            label: '$(git-pull-request) Generate PR Description',
+            description: 'Markdown',
+            detail: 'Generate full Pull Request markdown description from branch',
+            action: async () => vscode.commands.executeCommand('commitcraft.generatePR')
+          },
+          {
+            label: '$(git-branch) Suggest Branch Name',
+            description: 'Standard naming',
+            detail: 'Get Git branch name suggestions from code changes',
+            action: async () => vscode.commands.executeCommand('commitcraft.suggestBranch')
+          },
+          {
+            label: '$(notebook) Generate CHANGELOG.md',
+            description: 'Keep a Changelog',
+            detail: 'Auto-generate or update CHANGELOG.md for this release',
+            action: async () => vscode.commands.executeCommand('commitcraft.generateChangelog')
+          },
+          {
+            label: '$(sparkle) Quick Setup Wizard',
+            description: `Current: ${provider.name} (${activeModel})`,
+            detail: 'Change AI Provider, API key, model, or language step-by-step',
+            action: async () => this.runQuickSetupWizard()
+          },
+          {
+            label: '$(hubot) Switch AI Provider',
+            description: provider.name,
+            detail: 'Switch between Gemini, Copilot, OpenAI, Claude, DeepSeek, Ollama...',
+            action: async () => this.runSwitchProvider()
+          },
+          {
+            label: '$(gear) Open Settings Panel',
+            description: 'Interactive UI',
+            detail: 'Open clean, dynamic provider settings panel',
+            action: () => SettingsPanel.createOrShow(this.context.extensionUri)
+          }
+        ];
 
     const selected = await vscode.window.showQuickPick(items, {
-      title: 'CommitCraft — Quick Action Hub',
-      placeHolder: 'Select an action (Click to run)'
+      title: isThai ? 'CommitCraft — เมนูด่วน (Quick Action Hub)' : 'CommitCraft — Quick Action Hub',
+      placeHolder: isThai ? 'เลือกคำสั่งที่ต้องการ (คลิกเพื่อสั่งทำงาน)' : 'Select an action (Click to run)'
     });
 
     if (selected?.action) {
