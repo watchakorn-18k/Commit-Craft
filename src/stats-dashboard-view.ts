@@ -4,8 +4,7 @@ import { getRepoGitStats, GitStatsSummary } from './git-stats';
 import { ConfigKeys, ConfigurationManager } from './config';
 
 /**
- * Visual Webview Dashboard displaying Git statistics, Donut/Pie Chart, and Insights.
- * Uses clean SVG vector icons (Remix / Lucide style) instead of emojis.
+ * Visual Webview Dashboard displaying Git statistics, Donut/Pie Chart, Branch Divergence Meter, and Team Leaderboard.
  */
 export class GitStatsDashboardPanel {
   public static currentPanel: GitStatsDashboardPanel | undefined;
@@ -133,7 +132,7 @@ export class GitStatsDashboardPanel {
     const standupMarkdown = `### Git Activity & Standup Summary
 - **User**: \`${stats.userName || 'Unknown'}\` <${stats.userEmail || ''}>
 - **Remote Origin**: \`${stats.remoteUrl || 'Local only'}\`
-- **Branch**: \`${stats.currentBranch}\`
+- **Branch**: \`${stats.currentBranch}\` (${stats.divergence.statusText})
 - **Total Analyzed Commits**: ${total}
 - **Key Features (\`feat\`)**: ${stats.commitTypes.feat} (${stats.typePercentages.feat}%)
 - **Bug Fixes (\`fix\`)**: ${stats.commitTypes.fix} (${stats.typePercentages.fix}%)
@@ -157,6 +156,18 @@ export class GitStatsDashboardPanel {
     const svgWrench = `<svg class="icon-svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#8b5cf6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>`;
     const svgUser = `<svg class="icon-svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
     const svgLink = `<svg class="icon-svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>`;
+    const svgTrophy = `<svg class="icon-svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.45 1-1 1H7v4h10v-4h-2c-.55 0-1-.45-1-1v-2.34"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>`;
+    const svgCompass = `<svg class="icon-svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>`;
+
+    const div = stats.divergence;
+
+    const heatmapColors = [
+      'rgba(255,255,255,0.06)',
+      '#0e4429',
+      '#006d32',
+      '#26a641',
+      '#39d353'
+    ];
 
     return `<!DOCTYPE html>
 <html lang="en">
@@ -255,7 +266,9 @@ export class GitStatsDashboardPanel {
       margin-bottom: 24px;
       display: flex;
       flex-wrap: wrap;
-      gap: 20px;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
       font-size: 13px;
     }
     .meta-pill {
@@ -267,6 +280,31 @@ export class GitStatsDashboardPanel {
     .meta-pill strong {
       color: var(--text);
     }
+
+    /* Divergence Banner */
+    .divergence-box {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .divergence-gauge {
+      display: flex;
+      gap: 24px;
+    }
+    .gauge-item {
+      display: flex;
+      flex-direction: column;
+    }
+    .gauge-num {
+      font-size: 22px;
+      font-weight: 700;
+    }
+
     .main-section {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -318,6 +356,33 @@ export class GitStatsDashboardPanel {
       border-radius: 4px;
       transition: width 0.3s ease;
     }
+
+    /* Leaderboard Table */
+    .leader-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      margin-top: 8px;
+    }
+    .leader-table th {
+      text-align: left;
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--card-border);
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+    .leader-table td {
+      padding: 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .badge {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
     .standup-box {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
@@ -361,6 +426,29 @@ export class GitStatsDashboardPanel {
       ${svgLink}
       <span>${isThai ? 'Remote Origin' : 'Remote'}: <strong>${stats.remoteUrl}</strong></span>
     </div>` : ''}
+  </div>
+
+  <!-- Branch Divergence Meter Card -->
+  <div class="divergence-box">
+    <div>
+      <div class="card-label">${svgCompass} ${isThai ? 'Branch Divergence Meter (วัดระยะห่างกับ Base Branch)' : 'Branch Divergence Meter'}</div>
+      <div style="font-size: 16px; font-weight: 600; color: var(--text);">
+        ${div.isUpToDate ? `🌿 ${isThai ? 'กิ่งนี้ตรงกับ' : 'Branch is perfectly in sync with'} ${div.baseBranch}` : `${stats.currentBranch} ➔ ${div.statusText}`}
+      </div>
+      <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">
+        ${div.behind > 0 ? (isThai ? '⚠️ แนะนำให้ Rebase หรือ Merge เพื่อป้องกัน Conflict ใหญ่' : '⚠️ Pull or Rebase recommended to avoid merge conflicts') : (isThai ? 'พร้อมสำหรับการ Push หรือสร้าง Pull Request' : 'Ready to push or create Pull Request')}
+      </div>
+    </div>
+    <div class="divergence-gauge">
+      <div class="gauge-item">
+        <span style="font-size: 11px; color: #60a5fa;">AHEAD (นำหน้า)</span>
+        <span class="gauge-num" style="color: #60a5fa;">↑ ${div.ahead}</span>
+      </div>
+      <div class="gauge-item">
+        <span style="font-size: 11px; color: ${div.behind > 0 ? '#ef4444' : 'var(--text-muted)'};">BEHIND (ล้าหลัง)</span>
+        <span class="gauge-num" style="color: ${div.behind > 0 ? '#ef4444' : 'var(--text-muted)'};">↓ ${div.behind}</span>
+      </div>
+    </div>
   </div>
 
   <div class="grid">
@@ -462,6 +550,37 @@ export class GitStatsDashboardPanel {
         </div>
       </div>
     </div>
+  </div>
+
+  <!-- Team Leaderboard & Code Impact Matrix Table -->
+  <div class="card" style="margin-bottom: 24px;">
+    <div class="card-label">${svgTrophy} ${isThai ? 'Team Leaderboard & Code Impact Matrix (จัดอันดับผลงานทีม)' : 'Team Leaderboard & Impact Matrix'}</div>
+    <table class="leader-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Contributor</th>
+          <th>Features</th>
+          <th>Bug Fixes</th>
+          <th>Refactor</th>
+          <th>Total Commits</th>
+          <th>Share</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${stats.teamLeaderboard.map((item, idx) => `
+          <tr>
+            <td><strong>#${idx + 1}</strong></td>
+            <td><strong>${item.name}</strong></td>
+            <td><span class="badge" style="background:rgba(16,185,129,0.15); color:#10b981;">+${item.feat} feat</span></td>
+            <td><span class="badge" style="background:rgba(239,68,68,0.15); color:#ef4444;">${item.fix} fix</span></td>
+            <td><span class="badge" style="background:rgba(59,130,246,0.15); color:#3b82f6;">${item.refactor} refactor</span></td>
+            <td><strong>${item.total}</strong></td>
+            <td>${item.percentage}%</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
   </div>
 
   <div class="standup-box">

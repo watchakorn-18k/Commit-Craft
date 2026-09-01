@@ -4,7 +4,7 @@ import { getRepoGitStats, GitStatsSummary } from './git-stats';
 import { ConfigKeys, ConfigurationManager } from './config';
 
 /**
- * WebviewViewProvider for displaying Git visual Donut Chart, local user profile, and remote repository info directly in the sidebar.
+ * WebviewViewProvider for displaying Git visual Donut Chart, Branch Divergence, Leaderboard, and stats in the sidebar.
  */
 export class GitStatsWebviewViewProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = 'commitcraft.statsView';
@@ -39,7 +39,7 @@ export class GitStatsWebviewViewProvider implements vscode.WebviewViewProvider {
       }
     }, null, this._disposables);
 
-    // Initial render & retry after brief delay to ensure Git extension initialization
+    // Initial render & retry
     this.update();
     setTimeout(() => {
       if (this._view?.visible) {
@@ -77,7 +77,7 @@ export class GitStatsWebviewViewProvider implements vscode.WebviewViewProvider {
       // Fallback
     }
 
-    const stats = repo ? await getRepoGitStats(repo, 60) : null;
+    const stats = repo ? await getRepoGitStats(repo, 80) : null;
     this._view.webview.html = this._getHtml(stats);
   }
 
@@ -93,6 +93,8 @@ export class GitStatsWebviewViewProvider implements vscode.WebviewViewProvider {
     const svgBranch = `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="3" x2="6" y2="15"></line><circle cx="18" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><path d="M18 9a9 9 0 0 1-9 9"></path></svg>`;
     const svgUser = `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
     const svgLink = `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>`;
+    const svgTrophy = `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.45 1-1 1H7v4h10v-4h-2c-.55 0-1-.45-1-1v-2.34"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>`;
+    const svgMaximize = `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>`;
 
     if (!stats) {
       return `<!DOCTYPE html>
@@ -153,10 +155,21 @@ export class GitStatsWebviewViewProvider implements vscode.WebviewViewProvider {
       return `<circle r="45" cx="50" cy="50" fill="transparent" stroke="${slice.color}" stroke-width="12" stroke-dasharray="${strokeDasharray}" stroke-dashoffset="${strokeDashoffset}" stroke-linecap="round" />`;
     }).join('');
 
+    // Divergence badge styling
+    const div = stats.divergence;
+    let divBadgeClass = 'div-synced';
+    let divBadgeText = `✓ Synced with ${div.baseBranch}`;
+    if (div.behind > 0) {
+      divBadgeClass = 'div-behind';
+      divBadgeText = `⚠️ Behind ${div.behind} • Ahead ${div.ahead}`;
+    } else if (div.ahead > 0) {
+      divBadgeClass = 'div-ahead';
+      divBadgeText = `↑ ${div.ahead} Ahead of ${div.baseBranch}`;
+    }
+
     const standupMarkdown = `### Git Activity & Standup Summary
 - **User**: \`${stats.userName || 'Unknown'}\` <${stats.userEmail || ''}>
-- **Remote**: \`${stats.remoteUrl || 'Local only'}\`
-- **Branch**: \`${stats.currentBranch}\`
+- **Branch**: \`${stats.currentBranch}\` (${stats.divergence.statusText})
 - **Total Analyzed Commits**: ${total}
 - **Key Features (\`feat\`)**: ${stats.commitTypes.feat} (${stats.typePercentages.feat}%)
 - **Bug Fixes (\`fix\`)**: ${stats.commitTypes.fix} (${stats.typePercentages.fix}%)
@@ -166,6 +179,15 @@ export class GitStatsWebviewViewProvider implements vscode.WebviewViewProvider {
     const cleanRemote = stats.remoteUrl
       ? stats.remoteUrl.replace(/^https?:\/\//, '').replace(/^git@github\.com:/, 'github.com/').replace(/^git@gitlab\.com:/, 'gitlab.com/')
       : '';
+
+    // Heatmap level colors
+    const heatmapColors = [
+      'rgba(255,255,255,0.06)',
+      '#0e4429',
+      '#006d32',
+      '#26a641',
+      '#39d353'
+    ];
 
     return `<!DOCTYPE html>
 <html lang="en">
@@ -184,7 +206,7 @@ export class GitStatsWebviewViewProvider implements vscode.WebviewViewProvider {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 12px;
+      margin-bottom: 10px;
       padding-bottom: 8px;
       border-bottom: 1px solid var(--vscode-widget-border, rgba(255,255,255,0.08));
     }
@@ -216,6 +238,31 @@ export class GitStatsWebviewViewProvider implements vscode.WebviewViewProvider {
     }
     .icon-btn:hover {
       background: var(--vscode-toolbar-hoverBackground, rgba(255,255,255,0.1));
+    }
+    .divergence-banner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      margin-bottom: 12px;
+      font-weight: 500;
+    }
+    .div-synced {
+      background: rgba(16, 185, 129, 0.12);
+      color: #10b981;
+      border: 1px solid rgba(16, 185, 129, 0.25);
+    }
+    .div-ahead {
+      background: rgba(59, 130, 246, 0.12);
+      color: #60a5fa;
+      border: 1px solid rgba(59, 130, 246, 0.25);
+    }
+    .div-behind {
+      background: rgba(239, 68, 68, 0.12);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.25);
     }
     .chart-container {
       display: flex;
@@ -262,6 +309,64 @@ export class GitStatsWebviewViewProvider implements vscode.WebviewViewProvider {
       font-weight: 600;
       color: var(--vscode-foreground);
     }
+    
+    /* 7-day Activity Heatmap */
+    .section-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--vscode-descriptionForeground);
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .heatmap-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 4px;
+      margin-bottom: 14px;
+    }
+    .heat-cell {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+    }
+    .heat-box {
+      width: 100%;
+      height: 16px;
+      border-radius: 3px;
+    }
+    .heat-day {
+      font-size: 9px;
+      color: var(--vscode-descriptionForeground);
+    }
+
+    /* Leaderboard list */
+    .leader-list {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      margin-bottom: 14px;
+    }
+    .leader-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 6px;
+      background: var(--vscode-editor-background);
+      border-radius: 4px;
+      border: 1px solid var(--vscode-widget-border, rgba(255,255,255,0.06));
+      font-size: 11px;
+    }
+    .leader-rank {
+      font-weight: 700;
+      color: var(--vscode-descriptionForeground);
+      margin-right: 4px;
+    }
+
     .user-meta-card {
       background: var(--vscode-editor-background);
       border: 1px solid var(--vscode-widget-border, rgba(255,255,255,0.08));
@@ -298,6 +403,9 @@ export class GitStatsWebviewViewProvider implements vscode.WebviewViewProvider {
       <span>${stats.currentBranch}</span>
     </div>
     <div class="btn-group">
+      <button class="icon-btn" title="${isThai ? 'เปิดแดชบอร์ดเต็ม' : 'Open full dashboard'}" onclick="vscode.postMessage({ command: 'openFullDashboard' })">
+        ${svgMaximize}
+      </button>
       <button class="icon-btn" title="${isThai ? 'รีเฟรชข้อมูล' : 'Refresh stats'}" onclick="vscode.postMessage({ command: 'refresh' })">
         ${svgRefresh}
       </button>
@@ -307,6 +415,13 @@ export class GitStatsWebviewViewProvider implements vscode.WebviewViewProvider {
     </div>
   </div>
 
+  <!-- Branch Divergence Meter Banner -->
+  <div class="divergence-banner ${divBadgeClass}">
+    <span>${divBadgeText}</span>
+    <span>${div.behind > 0 ? (isThai ? 'ควร Rebase' : 'Sync needed') : 'OK'}</span>
+  </div>
+
+  <!-- SVG Donut Chart -->
   <div class="chart-container">
     <svg class="donut-svg" viewBox="0 0 100 100">
       <circle r="45" cx="50" cy="50" fill="transparent" stroke="rgba(255,255,255,0.06)" stroke-width="12" />
@@ -315,6 +430,7 @@ export class GitStatsWebviewViewProvider implements vscode.WebviewViewProvider {
     <div class="stats-subtitle">${total} commits (${stats.stagedCount} staged / ${stats.unstagedCount} modified)</div>
   </div>
 
+  <!-- Conventional Breakdown List -->
   <div class="legend-grid">
     ${data.map(d => `
       <div class="legend-row">
@@ -326,6 +442,39 @@ export class GitStatsWebviewViewProvider implements vscode.WebviewViewProvider {
       </div>
     `).join('')}
   </div>
+
+  <!-- 7-Day Velocity Activity Heatmap -->
+  <div class="section-title">
+    <span>7-Day Velocity Heatmap</span>
+  </div>
+  <div class="heatmap-row">
+    ${stats.weeklyActivity.map(day => `
+      <div class="heat-cell" title="${day.dateStr}: ${day.count} commits">
+        <div class="heat-box" style="background:${heatmapColors[day.level]};"></div>
+        <span class="heat-day">${day.dayLabel}</span>
+      </div>
+    `).join('')}
+  </div>
+
+  <!-- Team Leaderboard Preview -->
+  ${stats.teamLeaderboard && stats.teamLeaderboard.length > 0 ? `
+  <div class="section-title">
+    ${svgTrophy}
+    <span>${isThai ? 'Top Contributors' : 'Team Impact'}</span>
+  </div>
+  <div class="leader-list">
+    ${stats.teamLeaderboard.slice(0, 3).map((author, idx) => `
+      <div class="leader-item">
+        <span><strong class="leader-rank">#${idx + 1}</strong> ${author.name}</span>
+        <span>
+          <span style="color:#10b981; margin-right:4px;">${author.feat}f</span>
+          <span style="color:#ef4444; margin-right:4px;">${author.fix}b</span>
+          <strong>${author.total}</strong>
+        </span>
+      </div>
+    `).join('')}
+  </div>
+  ` : ''}
 
   <!-- Git Local User & Remote Info -->
   <div class="user-meta-card">
