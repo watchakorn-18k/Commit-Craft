@@ -110,6 +110,16 @@
         "title": "CommitCraft: อธิบาย Commit นี้ (Explain Commit)"
       },
       {
+        "command": "commitcraft.smartStash",
+        "icon": "$(archive)",
+        "title": "CommitCraft: เก็บโค้ดชั่วคราว (Smart Stash WIP)"
+      },
+      {
+        "command": "commitcraft.popStash",
+        "icon": "$(history)",
+        "title": "CommitCraft: เรียกคืนโค้ดจาก Stash (Stash Pop)"
+      },
+      {
         "command": "commitcraft.quickMenu",
         "icon": "$(zap)",
         "title": "CommitCraft: เมนูด่วน (Quick Action Hub)"
@@ -187,8 +197,12 @@
           "group": "navigation@5"
         },
         {
-          "command": "commitcraft.quickMenu",
+          "command": "commitcraft.smartStash",
           "group": "navigation@6"
+        },
+        {
+          "command": "commitcraft.quickMenu",
+          "group": "navigation@7"
         }
       ],
       "scm/resourceState/context": [

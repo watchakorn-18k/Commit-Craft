@@ -180,6 +180,19 @@ export class CommitCraftTreeDataProvider
               title: 'Explain Commit'
             }
           }
+        ),
+        new CommitCraftTreeItem(
+          isThai ? 'เก็บโค้ดชั่วคราว (Smart Stash)' : 'Smart Git Stash',
+          vscode.TreeItemCollapsibleState.None,
+          {
+            description: isThai ? 'AI บันทึก Stash' : 'AI Stash WIP',
+            tooltip: isThai ? 'วิเคราะห์โค้ดที่ยังไม่เสร็จแล้วตั้งชื่อ Stash ให้อัตโนมัติใน 1 คลิก' : 'Analyze uncommitted code and create a WIP stash with AI in 1 click',
+            iconPath: new vscode.ThemeIcon('archive'),
+            command: {
+              command: 'commitcraft.smartStash',
+              title: 'Smart Git Stash'
+            }
+          }
         )
       ];
     }

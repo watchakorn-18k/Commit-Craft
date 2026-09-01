@@ -294,3 +294,38 @@ Format your explanation in clean Markdown:
   ];
 };
 
+/**
+ * Builds prompt for smart Git Stash message generation
+ */
+export const getStashMessagePrompt = (
+  diff: string,
+  branchName?: string,
+  detectedScope?: string | null,
+  language: string = 'English'
+) => {
+  const scopeText = detectedScope ? `(${detectedScope})` : '';
+  return [
+    {
+      role: 'system',
+      content: `You are an expert Git assistant.
+Analyze the uncommitted changes and generate a single, concise WIP (Work In Progress) Git stash description (max 50 characters).
+Branch: ${branchName || 'current'}
+Scope: ${detectedScope || 'general'}
+Language: ${language}.
+Rules:
+1. Format: WIP${scopeText}: <brief description of what is being worked on>
+2. Strictly NO emojis, quotes, prefixes, markdown, or trailing periods. Output ONLY the one-line stash message text.
+
+Example outputs:
+- WIP(auth): refactor oauth token expiration
+- WIP(web): payment checkout form validation
+- WIP(api): add stripe webhook handler
+`
+    },
+    {
+      role: 'user',
+      content: `Current Uncommitted Changes Diff:\n\n${diff}`
+    }
+  ];
+};
+

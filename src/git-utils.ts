@@ -402,3 +402,75 @@ export async function getCommitDetails(
     };
   }
 }
+
+/**
+ * Get all uncommitted changes diff (both staged and unstaged)
+ */
+export async function getAllUncommittedDiff(
+  repo: any
+): Promise<{ diff: string; files: string[]; error?: string | null }> {
+  try {
+    const rootPath =
+      repo?.rootUri?.fsPath || vscode.workspace.workspaceFolders?.[0].uri.fsPath;
+    if (!rootPath) {
+      throw new Error('No workspace folder found');
+    }
+    const git = simpleGit(rootPath);
+    let diff = await git.diff(['HEAD']).catch(async () => {
+      return await git.diff();
+    });
+
+    const status = await git.status();
+    const files = [
+      ...status.modified,
+      ...status.not_added,
+      ...status.created,
+      ...status.deleted,
+      ...status.staged
+    ];
+
+    return {
+      diff: filterAndCompressDiff(diff || '', 25000),
+      files: Array.from(new Set(files)),
+      error: null
+    };
+  } catch (error: any) {
+    Logger.error('Error fetching uncommitted diff for stash:', error);
+    return { diff: '', files: [], error: error?.message || String(error) };
+  }
+}
+
+/**
+ * Save stash with custom message
+ */
+export async function gitStashPush(
+  repo: any,
+  message: string,
+  includeUntracked: boolean = true
+): Promise<void> {
+  const rootPath =
+    repo?.rootUri?.fsPath || vscode.workspace.workspaceFolders?.[0].uri.fsPath;
+  if (!rootPath) {
+    throw new Error('No workspace folder found');
+  }
+  const git = simpleGit(rootPath);
+  const args = ['push', '-m', message];
+  if (includeUntracked) {
+    args.push('-u');
+  }
+  await git.stash(args);
+}
+
+/**
+ * Pop latest stash
+ */
+export async function gitStashPop(repo: any): Promise<void> {
+  const rootPath =
+    repo?.rootUri?.fsPath || vscode.workspace.workspaceFolders?.[0].uri.fsPath;
+  if (!rootPath) {
+    throw new Error('No workspace folder found');
+  }
+  const git = simpleGit(rootPath);
+  await git.stash(['pop']);
+}
+

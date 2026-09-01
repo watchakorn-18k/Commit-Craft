@@ -14,6 +14,7 @@ import {
 import { fetchAvailableOpenAIModels } from './openai-utils';
 import { getVSCodeLMModels, isVSCodeLMAvailable } from './vscode-lm-utils';
 import { getRecentCommits, getCommitDetails, getRepo } from './git-utils';
+import { smartStash, popStash } from './stash-utils';
 import { getExplainCommitPrompt } from './prompts';
 import { AIService } from './ai-service';
 import { ProgressHandler } from './utils';
@@ -63,6 +64,15 @@ export class CommandManager {
     this.registerCommand('commitcraft.explainCommit', runExplain);
     this.registerCommand('commit-craft-ai.explainCommit', runExplain);
     this.registerCommand('ai-commit.explainCommit', runExplain);
+
+    // 6.2. Smart Git Stash (AI Stash Generator)
+    this.registerCommand('commitcraft.smartStash', smartStash);
+    this.registerCommand('commit-craft-ai.smartStash', smartStash);
+    this.registerCommand('ai-commit.smartStash', smartStash);
+
+    this.registerCommand('commitcraft.popStash', popStash);
+    this.registerCommand('commit-craft-ai.popStash', popStash);
+    this.registerCommand('ai-commit.popStash', popStash);
 
     // 7. Quick Setup Wizard
     const runSetup = async () => {
@@ -210,6 +220,12 @@ export class CommandManager {
             action: async () => this.runExplainCommit()
           },
           {
+            label: '$(archive) เก็บโค้ดชั่วคราว (Smart Stash WIP)',
+            description: 'AI บันทึก Stash',
+            detail: 'วิเคราะห์โค้ดที่ยังไม่เสร็จแล้วตั้งชื่อ Stash ให้อัตโนมัติใน 1 คลิก',
+            action: async () => smartStash()
+          },
+          {
             label: '$(sparkle) ตัวช่วยตั้งค่าด่วน (Setup Wizard)',
             description: `ปัจจุบัน: ${provider.name} (${activeModel})`,
             detail: 'เปลี่ยน AI Provider, API key, โมเดล หรือภาษาทีละขั้นตอน',
@@ -270,6 +286,12 @@ export class CommandManager {
             description: 'Deep Dive Analysis',
             detail: 'Have AI explain motivation, changes, and impact of any commit',
             action: async () => this.runExplainCommit()
+          },
+          {
+            label: '$(archive) Smart Git Stash (WIP Stash Generator)',
+            description: 'Save WIP with AI',
+            detail: 'Analyze uncommitted changes and auto-generate stash message in 1 click',
+            action: async () => smartStash()
           },
           {
             label: '$(sparkle) Quick Setup Wizard',
