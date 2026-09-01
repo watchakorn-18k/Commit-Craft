@@ -201,7 +201,7 @@ export class CommandManager {
     const items: (vscode.QuickPickItem & { action?: () => Promise<any> | any })[] = isThai
       ? [
           {
-            label: 'การสร้าง Commit (Commit Generation)',
+            label: 'Commit Generation',
             kind: vscode.QuickPickItemKind.Separator
           },
           {
@@ -223,7 +223,7 @@ export class CommandManager {
             action: async () => vscode.commands.executeCommand('commitcraft.generateCandidates')
           },
           {
-            label: 'ความปลอดภัย & จัดการโค้ด (Code Safety & Stash)',
+            label: 'Code Safety & Stash',
             kind: vscode.QuickPickItemKind.Separator
           },
           {
@@ -257,7 +257,7 @@ export class CommandManager {
             action: async () => popStash()
           },
           {
-            label: 'กิ่ง & ปล่อยเวอร์ชัน (Branch & Release)',
+            label: 'Branch & Release',
             kind: vscode.QuickPickItemKind.Separator
           },
           {
@@ -291,7 +291,7 @@ export class CommandManager {
             action: async () => this.runExplainCommit()
           },
           {
-            label: 'การตั้งค่าระบบ (Configuration & Settings)',
+            label: 'Configuration & Settings',
             kind: vscode.QuickPickItemKind.Separator
           },
           {

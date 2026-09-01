@@ -70,7 +70,7 @@ export class CommitCraftTreeDataProvider
     if (!element) {
       return [
         new CommitCraftTreeItem(
-          isThai ? 'การสร้าง Commit (Commit Generation)' : 'Commit Generation',
+          'Commit Generation',
           vscode.TreeItemCollapsibleState.Expanded,
           {
             iconPath: new vscode.ThemeIcon('git-commit'),
@@ -78,7 +78,7 @@ export class CommitCraftTreeDataProvider
           }
         ),
         new CommitCraftTreeItem(
-          isThai ? 'ความปลอดภัย & จัดการโค้ด (Code Safety & Stash)' : 'Code Safety & Stash',
+          'Code Safety & Stash',
           vscode.TreeItemCollapsibleState.Expanded,
           {
             iconPath: new vscode.ThemeIcon('shield'),
@@ -86,7 +86,7 @@ export class CommitCraftTreeDataProvider
           }
         ),
         new CommitCraftTreeItem(
-          isThai ? 'กิ่ง & ปล่อยเวอร์ชัน (Branch & Release)' : 'Branch & Release',
+          'Branch & Release',
           vscode.TreeItemCollapsibleState.Expanded,
           {
             iconPath: new vscode.ThemeIcon('git-pull-request'),
@@ -94,7 +94,7 @@ export class CommitCraftTreeDataProvider
           }
         ),
         new CommitCraftTreeItem(
-          isThai ? 'การตั้งค่าระบบ (Configuration)' : 'Configuration',
+          'Configuration & Settings',
           vscode.TreeItemCollapsibleState.Collapsed,
           {
             iconPath: new vscode.ThemeIcon('gear'),
