@@ -121,6 +121,19 @@ export class CommitCraftTreeDataProvider
           }
         ),
         new CommitCraftTreeItem(
+          isThai ? 'แปลโน้ตเป็น Commit อังกฤษ (TH → EN)' : 'Translate Notes to Conventional Commit',
+          vscode.TreeItemCollapsibleState.None,
+          {
+            description: 'TH → EN',
+            tooltip: isThai ? 'แปลงโน้ตภาษาไทยในช่อง Commit ให้เป็น Conventional Commit ภาษาอังกฤษสากล' : 'Translate informal commit notes into professional Conventional Commit',
+            iconPath: new vscode.ThemeIcon('globe'),
+            command: {
+              command: 'commitcraft.translateCommit',
+              title: 'Translate Commit Message'
+            }
+          }
+        ),
+        new CommitCraftTreeItem(
           isThai ? 'สร้าง Commit ออฟไลน์ (Offline Mode)' : 'Generate Offline Commit',
           vscode.TreeItemCollapsibleState.None,
           {

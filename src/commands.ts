@@ -7,6 +7,7 @@ import { generateChangelog } from './changelog-utils';
 import { safeUndoCommit } from './undo-utils';
 import { resolveMergeConflicts } from './conflict-utils';
 import { suggestReleaseTag } from './tag-utils';
+import { translateCommitMessage } from './translate-utils';
 import {
   ConfigKeys,
   ConfigurationManager,
@@ -96,6 +97,11 @@ export class CommandManager {
     this.registerCommand('commitcraft.suggestReleaseTag', suggestReleaseTag);
     this.registerCommand('commit-craft-ai.suggestReleaseTag', suggestReleaseTag);
     this.registerCommand('ai-commit.suggestReleaseTag', suggestReleaseTag);
+
+    // 6.6. Instant TH -> EN Commit Translator
+    this.registerCommand('commitcraft.translateCommit', translateCommitMessage);
+    this.registerCommand('commit-craft-ai.translateCommit', translateCommitMessage);
+    this.registerCommand('ai-commit.translateCommit', translateCommitMessage);
 
     // 7. Quick Setup Wizard
     const runSetup = async () => {
@@ -211,6 +217,12 @@ export class CommandManager {
             action: async () => vscode.commands.executeCommand('commitcraft.generate')
           },
           {
+            label: '$(globe) แปลโน้ตเป็น Commit อังกฤษ (TH → EN Translator)',
+            description: 'แปลภาษา',
+            detail: 'แปลงโน้ตภาษาไทยในช่อง Commit ให้เป็น Conventional Commit ภาษาอังกฤษสากล',
+            action: async () => translateCommitMessage()
+          },
+          {
             label: '$(plug) สร้างข้อความ Commit แบบออฟไลน์ (Offline Commit)',
             description: '0 AI / ไม่ใช้เน็ต',
             detail: 'วิเคราะห์ไฟล์สร้างข้อความ Commit อัตโนมัติโดยตรงในเครื่อง ไม่พึ่งพา AI',
@@ -323,6 +335,12 @@ export class CommandManager {
             description: 'Default',
             detail: 'Analyze staged changes and populate Git commit input box',
             action: async () => vscode.commands.executeCommand('commitcraft.generate')
+          },
+          {
+            label: '$(globe) Translate Notes to Conventional Commit',
+            description: 'TH → EN',
+            detail: 'Translate informal commit notes into professional Conventional Commit',
+            action: async () => translateCommitMessage()
           },
           {
             label: '$(plug) Generate Offline Commit (No AI)',

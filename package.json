@@ -140,6 +140,11 @@
         "title": "CommitCraft: แนะนำเลข Release Tag (SemVer Suggester)"
       },
       {
+        "command": "commitcraft.translateCommit",
+        "icon": "$(globe)",
+        "title": "CommitCraft: แปลโน้ตเป็น Conventional Commit (TH → EN Translator)"
+      },
+      {
         "command": "commitcraft.quickMenu",
         "icon": "$(zap)",
         "title": "CommitCraft: เมนูด่วน (Quick Action Hub)"

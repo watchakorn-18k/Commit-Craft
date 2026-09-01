@@ -370,7 +370,7 @@ export const getReleaseTagPrompt = (
   return [
     {
       role: 'system',
-      content: `You are a DevOps and release release engineering expert adhering to Semantic Versioning (SemVer 2.0.0).
+      content: `You are a DevOps and release engineering expert adhering to Semantic Versioning (SemVer 2.0.0).
 Analyze the commits since current tag "${currentTag || 'none'}":
 - If there are breaking changes (e.g. BREAKING CHANGE or feat!/fix!), recommend a MAJOR bump.
 - If there are new features (feat/feature), recommend a MINOR bump.
@@ -398,5 +398,56 @@ Output valid JSON matching this schema:
     }
   ];
 };
+
+/**
+ * Builds prompt for translating Thai notes into standard Conventional Commit in English
+ */
+export const getTranslateCommitPrompt = (
+  rawText: string,
+  branchName?: string,
+  detectedScope?: string | null
+) => {
+  const scopeHint = detectedScope ? `(suggested scope: ${detectedScope})` : '';
+  const branchHint = branchName ? `(branch: ${branchName})` : '';
+
+  return [
+    {
+      role: 'system',
+      content: `You are an expert developer converting informal notes/descriptions (primarily in Thai or shorthand) into a clean, professional Conventional Commit message in English.
+
+Context: ${scopeHint} ${branchHint}
+
+Rules:
+1. Identify the appropriate Conventional Commit type:
+   - feat: for new features or capabilities
+   - fix: for bug fixes or errors
+   - refactor: for code cleanup without behavior change
+   - docs: for documentation
+   - test: for unit/integration tests
+   - style: for formatting, CSS, UI styles
+   - chore/build/ci: for configuration or maintenance
+2. Extract appropriate scope if applicable: type(scope): concise summary in lowercase imperative mood.
+3. If the note contains multiple points, include bullet points in the commit body.
+4. Strictly NO emojis, NO markdown formatting backticks, NO explanation notes.
+5. Output ONLY the raw commit message.
+
+Examples:
+Input: แก้บั๊กตอนล็อกอินแล้วค้างตอนโหลด token
+Output: fix(auth): resolve infinite loading freeze during token refresh
+
+Input: เพิ่มหน้า checkout และปุ่มจ่ายเงิน stripe
+Output: feat(checkout): implement payment page with stripe integration
+
+Input: อัปเดต readme และแก้ typo ใน docs
+Output: docs: update readme and fix typos in documentation
+`
+    },
+    {
+      role: 'user',
+      content: `Informal Note to Translate & Format:\n\n${rawText}`
+    }
+  ];
+};
+
 
 
