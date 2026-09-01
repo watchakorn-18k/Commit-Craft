@@ -874,6 +874,179 @@ export async function gitSyncBranch(
   }
 }
 
+/**
+ * Get Git Blame information for a specific line number in a file
+ */
+export async function getGitBlameForLine(
+  repo: any,
+  filePath: string,
+  lineNumber: number
+): Promise<{
+  commitHash: string;
+  author: string;
+  authorEmail: string;
+  authorDate: string;
+  summary: string;
+  lineContent: string;
+  commitDiff: string;
+  error?: string | null;
+}> {
+  try {
+    const rootPath =
+      repo?.rootUri?.fsPath || vscode.workspace.workspaceFolders?.[0].uri.fsPath;
+    if (!rootPath) {
+      throw new Error('No workspace folder found');
+    }
+    const git = simpleGit(rootPath);
+    const relativePath = filePath.startsWith(rootPath)
+      ? filePath.substring(rootPath.length + 1)
+      : filePath;
 
+    const rawBlame = await git.raw([
+      'blame',
+      '-L',
+      `${lineNumber},${lineNumber}`,
+      '--line-porcelain',
+      relativePath
+    ]);
 
+    const lines = rawBlame.split('\n');
+    let commitHash = '';
+    let author = 'Unknown';
+    let authorEmail = '';
+    let authorDate = '';
+    let summary = '';
+    let lineContent = '';
 
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (i === 0) {
+        commitHash = line.split(' ')[0] || '';
+      } else if (line.startsWith('author ')) {
+        author = line.substring(7);
+      } else if (line.startsWith('author-mail ')) {
+        authorEmail = line.substring(12).replace(/^<|>$/g, '');
+      } else if (line.startsWith('author-time ')) {
+        const timeSec = parseInt(line.substring(12), 10);
+        if (!isNaN(timeSec)) {
+          authorDate = new Date(timeSec * 1000).toLocaleString();
+        }
+      } else if (line.startsWith('summary ')) {
+        summary = line.substring(8);
+      } else if (line.startsWith('\t')) {
+        lineContent = line.substring(1);
+      }
+    }
+
+    let commitDiff = '';
+    if (commitHash && !commitHash.startsWith('0000000')) {
+      const details = await getCommitDetails(repo, commitHash);
+      commitDiff = details.diff || '';
+    }
+
+    return {
+      commitHash,
+      author,
+      authorEmail,
+      authorDate,
+      summary,
+      lineContent,
+      commitDiff: filterAndCompressDiff(commitDiff, 20000),
+      error: null
+    };
+  } catch (error: any) {
+    Logger.error('Failed to get git blame for line:', error);
+    return {
+      commitHash: '',
+      author: '',
+      authorEmail: '',
+      authorDate: '',
+      summary: '',
+      lineContent: '',
+      commitDiff: '',
+      error: error?.message || String(error)
+    };
+  }
+}
+
+/**
+ * Get cumulative Branch Diff and commits for Pull Request Review Simulator
+ */
+export async function getBranchDiffForPR(
+  repo: any,
+  baseBranch?: string
+): Promise<{
+  baseBranch: string;
+  currentBranch: string;
+  diff: string;
+  commits: Array<{ hash: string; message: string; author: string }>;
+  files: string[];
+  error?: string | null;
+}> {
+  try {
+    const rootPath =
+      repo?.rootUri?.fsPath || vscode.workspace.workspaceFolders?.[0].uri.fsPath;
+    if (!rootPath) {
+      throw new Error('No workspace folder found');
+    }
+    const git = simpleGit(rootPath);
+    const branches = await git.branchLocal();
+    const currentBranch = branches.current;
+
+    let targetBase = baseBranch;
+    if (!targetBase) {
+      if (branches.all.includes('main')) {
+        targetBase = 'main';
+      } else if (branches.all.includes('master')) {
+        targetBase = 'master';
+      } else if (branches.all.includes('develop')) {
+        targetBase = 'develop';
+      } else {
+        targetBase = 'origin/main';
+      }
+    }
+
+    // Fetch commit logs between base and current branch
+    let commits: Array<{ hash: string; message: string; author: string }> = [];
+    try {
+      const log = await git.log({ from: targetBase, to: currentBranch, maxCount: 40 });
+      commits = log.all.map((c) => ({
+        hash: c.hash.substring(0, 7),
+        message: c.message,
+        author: c.author_name
+      }));
+    } catch {
+      // Fallback
+    }
+
+    // Get branch diff
+    let diff = await git.diff([`${targetBase}...${currentBranch}`]).catch(async () => {
+      return await git.diff([`${targetBase}..${currentBranch}`]);
+    }).catch(async () => {
+      return await git.diff(['HEAD~5']);
+    });
+
+    // Get summary of changed files
+    const statusSummary = await git.diffSummary([`${targetBase}...${currentBranch}`]).catch(() => null);
+    const files = statusSummary?.files.map((f) => f.file) || [];
+
+    return {
+      baseBranch: targetBase,
+      currentBranch,
+      diff: filterAndCompressDiff(diff || '', 35000),
+      commits,
+      files,
+      error: null
+    };
+  } catch (error: any) {
+    Logger.error('Failed to get branch diff for PR:', error);
+    return {
+      baseBranch: 'main',
+      currentBranch: 'HEAD',
+      diff: '',
+      commits: [],
+      files: [],
+      error: error?.message || String(error)
+    };
+  }
+}

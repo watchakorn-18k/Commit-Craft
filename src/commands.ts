@@ -12,6 +12,8 @@ import { cleanGhostBranches } from './branch-cleaner';
 import { summarizeSquashCommits } from './squash-utils';
 import { runGitBisectAssistant } from './bisect-assistant';
 import { smartSyncBranch } from './sync-utils';
+import { tellLineStory } from './blame-storyteller';
+import { simulatePRReview } from './pr-review-simulator';
 import { GitStatsDashboardPanel } from './stats-dashboard-view';
 import {
   ConfigKeys,
@@ -143,6 +145,16 @@ export class CommandManager {
     this.registerCommand('commitcraft.syncBranch', runSync);
     this.registerCommand('commit-craft-ai.syncBranch', runSync);
     this.registerCommand('ai-commit.syncBranch', runSync);
+
+    // 6.12. AI Git Blame & Line Storyteller
+    this.registerCommand('commitcraft.tellLineStory', tellLineStory);
+    this.registerCommand('commit-craft-ai.tellLineStory', tellLineStory);
+    this.registerCommand('ai-commit.tellLineStory', tellLineStory);
+
+    // 6.13. AI Pull Request Pre-Review Simulator
+    this.registerCommand('commitcraft.simulatePRReview', simulatePRReview);
+    this.registerCommand('commit-craft-ai.simulatePRReview', simulatePRReview);
+    this.registerCommand('ai-commit.simulatePRReview', simulatePRReview);
 
     // 7. Quick Setup Wizard
     const runSetup = async () => {
@@ -290,6 +302,12 @@ export class CommandManager {
             kind: vscode.QuickPickItemKind.Separator
           },
           {
+            label: '$(book) เล่าประวัติโค้ดบรรทัดนี้ (AI Line Storyteller)',
+            description: 'AI เล่าประวัติ',
+            detail: 'วิเคราะห์ประวัติ Git Blame และ Commit เล่าเบื้องหลังว่าทำไมบรรทัดนี้ถึงถูกเขียนขึ้นมา',
+            action: async () => tellLineStory()
+          },
+          {
             label: '$(shield) ตรวจทานโค้ดก่อน Commit (Code Review)',
             description: 'ตรวจบั๊ก & ความปลอดภัย',
             detail: 'สแกนหาข้อผิดพลาด บั๊ก API Key หลุด และ console.log',
@@ -322,6 +340,18 @@ export class CommandManager {
           {
             label: 'Branch & Release',
             kind: vscode.QuickPickItemKind.Separator
+          },
+          {
+            label: '$(shield) จำลองการตรวจ PR จาก Senior Dev (PR Pre-Review)',
+            description: 'Senior Architect',
+            detail: 'ให้ Senior AI ตรวจสอบโค้ดทั้ง Branch ก่อนเปิด PR จริง (เช็กบั๊ก, ความปลอดภัย, ประสิทธิภาพ)',
+            action: async () => simulatePRReview()
+          },
+          {
+            label: '$(git-pull-request-go-to-changes) Sync & Rebase กับ Base Branch (Sync Branch)',
+            description: 'Rebase / Merge',
+            detail: 'Sync อัปเดต Branch ปัจจุบันให้ทัน main/master ด้วย Rebase หรือ Merge',
+            action: async () => smartSyncBranch()
           },
           {
             label: '$(bug) ตามล่าหาจุดเกิดบั๊ก (AI Git Bisect Bug Tracker)',
@@ -438,6 +468,12 @@ export class CommandManager {
             kind: vscode.QuickPickItemKind.Separator
           },
           {
+            label: '$(book) Explain Line Story (AI Line Storyteller)',
+            description: 'AI Line Narrative',
+            detail: 'Analyze Git Blame and commit backstory on why this line was written and why this logic was chosen',
+            action: async () => tellLineStory()
+          },
+          {
             label: '$(shield) Pre-Commit Code Review',
             description: 'Security & Bug Audit',
             detail: 'Review diff for runtime bugs, credential leaks, and console.logs',
@@ -470,6 +506,18 @@ export class CommandManager {
           {
             label: 'Branch & Release',
             kind: vscode.QuickPickItemKind.Separator
+          },
+          {
+            label: '$(shield) Simulate Senior PR Code Review',
+            description: 'Senior Architect',
+            detail: 'Simulate full Senior Staff Code Review on whole branch before opening actual PR',
+            action: async () => simulatePRReview()
+          },
+          {
+            label: '$(git-pull-request-go-to-changes) Sync & Rebase with Base Branch',
+            description: 'Rebase / Merge',
+            detail: 'Intelligently sync active branch with base branch using Rebase or Merge',
+            action: async () => smartSyncBranch()
           },
           {
             label: '$(bug) AI Git Bisect Bug Tracker',

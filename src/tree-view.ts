@@ -168,6 +168,19 @@ export class CommitCraftTreeDataProvider
     if (element.category === 'codeSafety') {
       return [
         new CommitCraftTreeItem(
+          isThai ? 'เล่าประวัติโค้ดบรรทัดนี้ (AI Line Storyteller)' : 'Explain Line Story (AI Storyteller)',
+          vscode.TreeItemCollapsibleState.None,
+          {
+            description: isThai ? 'AI เล่าประวัติ' : 'Line backstory',
+            tooltip: isThai ? 'วิเคราะห์ Git Blame และ Commit เล่าเบื้องหลังว่าทำไมบรรทัดนี้ถึงถูกเขียนขึ้นมาและใช้ Logic นี้' : 'Analyze Git blame and commit backstory of why this line was written and why this logic was chosen',
+            iconPath: new vscode.ThemeIcon('book'),
+            command: {
+              command: 'commitcraft.tellLineStory',
+              title: 'Explain Line Story'
+            }
+          }
+        ),
+        new CommitCraftTreeItem(
           isThai ? 'ตรวจทานโค้ดก่อน Commit (Code Review)' : 'Pre-Commit Code Review',
           vscode.TreeItemCollapsibleState.None,
           {
@@ -238,6 +251,19 @@ export class CommitCraftTreeDataProvider
     // Category 3: Branch & Release
     if (element.category === 'branchRelease') {
       return [
+        new CommitCraftTreeItem(
+          isThai ? 'จำลองการตรวจ PR จาก Senior Dev (PR Pre-Review)' : 'Simulate Senior PR Review',
+          vscode.TreeItemCollapsibleState.None,
+          {
+            description: isThai ? 'Senior Architect' : 'Senior Architect',
+            tooltip: isThai ? 'ให้ Senior AI ตรวจสอบโค้ดทั้ง Branch ก่อนเปิด PR จริง (เช็กบั๊ก, ความปลอดภัย, ประสิทธิภาพ)' : 'Simulate full Senior Staff Code Review on whole branch before opening actual PR',
+            iconPath: new vscode.ThemeIcon('shield'),
+            command: {
+              command: 'commitcraft.simulatePRReview',
+              title: 'Simulate Senior PR Review'
+            }
+          }
+        ),
         new CommitCraftTreeItem(
           isThai ? 'ตามล่าหาจุดเกิดบั๊ก (AI Git Bisect Bug Tracker)' : 'AI Git Bisect Bug Tracker',
           vscode.TreeItemCollapsibleState.None,

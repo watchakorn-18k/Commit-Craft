@@ -155,6 +155,16 @@
         "title": "CommitCraft: ตามล่าหาจุดเกิดบั๊ก (AI Git Bisect Bug Tracker)"
       },
       {
+        "command": "commitcraft.tellLineStory",
+        "icon": "$(book)",
+        "title": "CommitCraft: เล่าประวัติโค้ดบรรทัดนี้ (AI Line Storyteller)"
+      },
+      {
+        "command": "commitcraft.simulatePRReview",
+        "icon": "$(shield)",
+        "title": "CommitCraft: จำลองการตรวจ PR จาก Senior Dev (PR Pre-Review)"
+      },
+      {
         "command": "commitcraft.syncBranch",
         "icon": "$(git-pull-request-go-to-changes)",
         "title": "CommitCraft: Sync & Rebase กับ Base Branch (Sync Branch)"
@@ -277,16 +287,20 @@
       ],
       "editor/context": [
         {
+          "command": "commitcraft.tellLineStory",
+          "group": "1_commitcraft@1"
+        },
+        {
           "command": "commitcraft.resolveConflict",
-          "group": "1_commitcraft"
+          "group": "1_commitcraft@2"
         },
         {
           "command": "commitcraft.reviewChanges",
-          "group": "1_commitcraft"
+          "group": "1_commitcraft@3"
         },
         {
           "command": "commitcraft.generate",
-          "group": "1_commitcraft"
+          "group": "1_commitcraft@4"
         }
       ],
       "view/title": [
