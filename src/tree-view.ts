@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { ConfigKeys, ConfigurationManager } from './config';
 
 export class CommitCraftTreeItem extends vscode.TreeItem {
-  public category?: 'quickActions' | 'activeSettings';
+  public category?: 'commitGen' | 'codeSafety' | 'branchRelease' | 'activeSettings';
 
   constructor(
     label: string,
@@ -13,7 +13,7 @@ export class CommitCraftTreeItem extends vscode.TreeItem {
       iconPath?: vscode.ThemeIcon | string;
       command?: vscode.Command;
       contextValue?: string;
-      category?: 'quickActions' | 'activeSettings';
+      category?: 'commitGen' | 'codeSafety' | 'branchRelease' | 'activeSettings';
     }
   ) {
     super(label, collapsibleState);
@@ -70,33 +70,50 @@ export class CommitCraftTreeDataProvider
     if (!element) {
       return [
         new CommitCraftTreeItem(
-          isThai ? 'คำสั่งด่วน (Quick Actions)' : 'Quick Actions',
+          isThai ? 'การสร้าง Commit (Commit Generation)' : 'Commit Generation',
           vscode.TreeItemCollapsibleState.Expanded,
           {
-            iconPath: new vscode.ThemeIcon('zap'),
-            category: 'quickActions'
+            iconPath: new vscode.ThemeIcon('git-commit'),
+            category: 'commitGen'
           }
         ),
         new CommitCraftTreeItem(
-          isThai ? 'การตั้งค่าปัจจุบัน (Active Settings)' : 'Active Settings',
+          isThai ? 'ความปลอดภัย & จัดการโค้ด (Code Safety & Stash)' : 'Code Safety & Stash',
           vscode.TreeItemCollapsibleState.Expanded,
           {
-            iconPath: new vscode.ThemeIcon('settings'),
+            iconPath: new vscode.ThemeIcon('shield'),
+            category: 'codeSafety'
+          }
+        ),
+        new CommitCraftTreeItem(
+          isThai ? 'กิ่ง & ปล่อยเวอร์ชัน (Branch & Release)' : 'Branch & Release',
+          vscode.TreeItemCollapsibleState.Expanded,
+          {
+            iconPath: new vscode.ThemeIcon('git-pull-request'),
+            category: 'branchRelease'
+          }
+        ),
+        new CommitCraftTreeItem(
+          isThai ? 'การตั้งค่าระบบ (Configuration)' : 'Configuration',
+          vscode.TreeItemCollapsibleState.Collapsed,
+          {
+            iconPath: new vscode.ThemeIcon('gear'),
             category: 'activeSettings'
           }
         )
       ];
     }
 
-    if (element.category === 'quickActions' || element.label?.toString().includes('Quick Actions') || element.label?.toString().includes('คำสั่งด่วน')) {
+    // Category 1: Commit Generation
+    if (element.category === 'commitGen') {
       return [
         new CommitCraftTreeItem(
-          isThai ? 'สร้างข้อความ Commit (Generate)' : 'Generate Commit Message',
+          isThai ? 'สร้างข้อความ Commit (AI 1-Click)' : 'Generate Commit Message (1-Click)',
           vscode.TreeItemCollapsibleState.None,
           {
-            description: '1-Click',
+            description: isThai ? 'วิเคราะห์ Diff' : 'AI 1-Click',
             tooltip: isThai ? 'วิเคราะห์การเปลี่ยนแปลงและใส่ข้อความลงใน Git Input Box ทันที' : 'Analyze staged changes and populate Git commit input box',
-            iconPath: new vscode.ThemeIcon('git-commit'),
+            iconPath: new vscode.ThemeIcon('sparkle'),
             command: {
               command: 'commitcraft.generate',
               title: 'Generate Commit Message'
@@ -104,7 +121,7 @@ export class CommitCraftTreeDataProvider
           }
         ),
         new CommitCraftTreeItem(
-          isThai ? 'สร้าง Commit แบบออฟไลน์ (Offline Commit)' : 'Generate Offline Commit',
+          isThai ? 'สร้าง Commit ออฟไลน์ (Offline Mode)' : 'Generate Offline Commit',
           vscode.TreeItemCollapsibleState.None,
           {
             description: isThai ? '0 AI / ไม่ใช้เน็ต' : '0 AI / Offline',
@@ -117,7 +134,7 @@ export class CommitCraftTreeDataProvider
           }
         ),
         new CommitCraftTreeItem(
-          isThai ? 'สร้าง 3 ตัวเลือก Commit (3 Options)' : 'Generate 3 Commit Options',
+          isThai ? 'สร้าง 3 ตัวเลือกสไตล์ (3 Candidates)' : 'Generate 3 Commit Options',
           vscode.TreeItemCollapsibleState.None,
           {
             description: isThai ? 'เลือกสไตล์' : 'Choose style',
@@ -128,7 +145,13 @@ export class CommitCraftTreeDataProvider
               title: 'Generate Multiple Options'
             }
           }
-        ),
+        )
+      ];
+    }
+
+    // Category 2: Code Safety & Stash
+    if (element.category === 'codeSafety') {
+      return [
         new CommitCraftTreeItem(
           isThai ? 'ตรวจทานโค้ดก่อน Commit (Code Review)' : 'Pre-Commit Code Review',
           vscode.TreeItemCollapsibleState.None,
@@ -139,71 +162,6 @@ export class CommitCraftTreeDataProvider
             command: {
               command: 'commitcraft.reviewChanges',
               title: 'Pre-Commit Code Review'
-            }
-          }
-        ),
-        new CommitCraftTreeItem(
-          isThai ? 'สร้างคำอธิบาย Pull Request (PR Description)' : 'Generate PR Description',
-          vscode.TreeItemCollapsibleState.None,
-          {
-            description: 'Markdown',
-            tooltip: isThai ? 'ร่างคำอธิบาย PR สำหรับ GitHub/GitLab จากประวัติ Commit' : 'Draft a full Pull Request description from branch history',
-            iconPath: new vscode.ThemeIcon('git-pull-request'),
-            command: {
-              command: 'commitcraft.generatePR',
-              title: 'Generate PR Description'
-            }
-          }
-        ),
-        new CommitCraftTreeItem(
-          isThai ? 'แนะนำชื่อ Branch (Suggest Branch)' : 'Suggest Branch Name',
-          vscode.TreeItemCollapsibleState.None,
-          {
-            description: isThai ? 'ชื่อมาตรฐาน' : 'Standard names',
-            tooltip: isThai ? 'รับคำแนะนำชื่อ Git branch ตามมาตรฐานจากโค้ดที่แก้' : 'Get Git branch name suggestions based on code diff',
-            iconPath: new vscode.ThemeIcon('git-branch'),
-            command: {
-              command: 'commitcraft.suggestBranch',
-              title: 'Suggest Branch Name'
-            }
-          }
-        ),
-        new CommitCraftTreeItem(
-          isThai ? 'สร้าง/อัปเดต CHANGELOG.md' : 'Generate CHANGELOG.md',
-          vscode.TreeItemCollapsibleState.None,
-          {
-            description: 'Keep a Changelog',
-            tooltip: isThai ? 'สร้างหรืออัปเดตไฟล์ CHANGELOG.md ของเวอร์ชันนี้อัตโนมัติ' : 'Auto-generate or update CHANGELOG.md for this release',
-            iconPath: new vscode.ThemeIcon('notebook'),
-            command: {
-              command: 'commitcraft.generateChangelog',
-              title: 'Generate CHANGELOG.md'
-            }
-          }
-        ),
-        new CommitCraftTreeItem(
-          isThai ? 'อธิบาย Commit (Commit Explainer)' : 'Explain Commit',
-          vscode.TreeItemCollapsibleState.None,
-          {
-            description: isThai ? 'AI สรุปเจาะลึก' : 'Deep dive',
-            tooltip: isThai ? 'ให้ AI ช่วยสรุปและอธิบายจุดประสงค์ของ Commit เก่าๆ ในประวัติ Git' : 'Have AI explain motivation, changes, and system impact of any commit',
-            iconPath: new vscode.ThemeIcon('book'),
-            command: {
-              command: 'commitcraft.explainCommit',
-              title: 'Explain Commit'
-            }
-          }
-        ),
-        new CommitCraftTreeItem(
-          isThai ? 'เก็บโค้ดชั่วคราว (Smart Stash)' : 'Smart Git Stash',
-          vscode.TreeItemCollapsibleState.None,
-          {
-            description: isThai ? 'AI บันทึก Stash' : 'AI Stash WIP',
-            tooltip: isThai ? 'วิเคราะห์โค้ดที่ยังไม่เสร็จแล้วตั้งชื่อ Stash ให้อัตโนมัติใน 1 คลิก' : 'Analyze uncommitted code and create a WIP stash with AI in 1 click',
-            iconPath: new vscode.ThemeIcon('archive'),
-            command: {
-              command: 'commitcraft.smartStash',
-              title: 'Smart Git Stash'
             }
           }
         ),
@@ -234,6 +192,51 @@ export class CommitCraftTreeDataProvider
           }
         ),
         new CommitCraftTreeItem(
+          isThai ? 'บันทึกโค้ดชั่วคราว (Smart Stash WIP)' : 'Smart Git Stash WIP',
+          vscode.TreeItemCollapsibleState.None,
+          {
+            description: isThai ? 'AI บันทึก Stash' : 'AI Stash WIP',
+            tooltip: isThai ? 'วิเคราะห์โค้ดที่ยังไม่เสร็จแล้วตั้งชื่อ Stash ให้อัตโนมัติใน 1 คลิก' : 'Analyze uncommitted code and create a WIP stash with AI in 1 click',
+            iconPath: new vscode.ThemeIcon('archive'),
+            command: {
+              command: 'commitcraft.smartStash',
+              title: 'Smart Git Stash'
+            }
+          }
+        ),
+        new CommitCraftTreeItem(
+          isThai ? 'เรียกคืนโค้ดจาก Stash (Stash Pop)' : 'Restore Stash (Stash Pop)',
+          vscode.TreeItemCollapsibleState.None,
+          {
+            description: isThai ? 'ดึงโค้ดล่าสุด' : 'Pop latest',
+            tooltip: isThai ? 'ดึงการแก้ไขที่บันทึกไว้ใน Stash ล่าสุดกลับมาทำงานต่อ' : 'Pop and apply latest git stash',
+            iconPath: new vscode.ThemeIcon('history'),
+            command: {
+              command: 'commitcraft.popStash',
+              title: 'Pop Stash'
+            }
+          }
+        )
+      ];
+    }
+
+    // Category 3: Branch & Release
+    if (element.category === 'branchRelease') {
+      return [
+        new CommitCraftTreeItem(
+          isThai ? 'สร้างคำอธิบาย Pull Request (PR Description)' : 'Generate PR Description',
+          vscode.TreeItemCollapsibleState.None,
+          {
+            description: 'Markdown',
+            tooltip: isThai ? 'ร่างคำอธิบาย PR สำหรับ GitHub/GitLab จากประวัติ Commit' : 'Draft a full Pull Request description from branch history',
+            iconPath: new vscode.ThemeIcon('git-pull-request'),
+            command: {
+              command: 'commitcraft.generatePR',
+              title: 'Generate PR Description'
+            }
+          }
+        ),
+        new CommitCraftTreeItem(
           isThai ? 'แนะนำเลข Release & Tag (SemVer)' : 'Suggest Release Tag (SemVer)',
           vscode.TreeItemCollapsibleState.None,
           {
@@ -245,11 +248,51 @@ export class CommitCraftTreeDataProvider
               title: 'Suggest Release Tag'
             }
           }
+        ),
+        new CommitCraftTreeItem(
+          isThai ? 'สร้าง/อัปเดต CHANGELOG.md' : 'Generate CHANGELOG.md',
+          vscode.TreeItemCollapsibleState.None,
+          {
+            description: 'Keep a Changelog',
+            tooltip: isThai ? 'สร้างหรืออัปเดตไฟล์ CHANGELOG.md ของเวอร์ชันนี้อัตโนมัติ' : 'Auto-generate or update CHANGELOG.md for this release',
+            iconPath: new vscode.ThemeIcon('notebook'),
+            command: {
+              command: 'commitcraft.generateChangelog',
+              title: 'Generate CHANGELOG.md'
+            }
+          }
+        ),
+        new CommitCraftTreeItem(
+          isThai ? 'แนะนำชื่อ Branch (Suggest Branch)' : 'Suggest Branch Name',
+          vscode.TreeItemCollapsibleState.None,
+          {
+            description: isThai ? 'ชื่อมาตรฐาน' : 'Standard names',
+            tooltip: isThai ? 'รับคำแนะนำชื่อ Git branch ตามมาตรฐานจากโค้ดที่แก้' : 'Get Git branch name suggestions based on code diff',
+            iconPath: new vscode.ThemeIcon('git-branch'),
+            command: {
+              command: 'commitcraft.suggestBranch',
+              title: 'Suggest Branch Name'
+            }
+          }
+        ),
+        new CommitCraftTreeItem(
+          isThai ? 'อธิบาย Commit (Commit Explainer)' : 'Explain Commit',
+          vscode.TreeItemCollapsibleState.None,
+          {
+            description: isThai ? 'AI สรุปเจาะลึก' : 'Deep dive',
+            tooltip: isThai ? 'ให้ AI ช่วยสรุปและอธิบายจุดประสงค์ของ Commit เก่าๆ ในประวัติ Git' : 'Have AI explain motivation, changes, and system impact of any commit',
+            iconPath: new vscode.ThemeIcon('book'),
+            command: {
+              command: 'commitcraft.explainCommit',
+              title: 'Explain Commit'
+            }
+          }
         )
       ];
     }
 
-    if (element.category === 'activeSettings' || element.label?.toString().includes('Active Settings') || element.label?.toString().includes('การตั้งค่าปัจจุบัน')) {
+    // Category 4: Configuration & Settings
+    if (element.category === 'activeSettings') {
       const provider = this.configManager.getActiveProvider();
       const activeModel = this.configManager.getActiveModel();
       const language = this.configManager.getConfig<string>(

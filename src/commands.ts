@@ -201,7 +201,11 @@ export class CommandManager {
     const items: (vscode.QuickPickItem & { action?: () => Promise<any> | any })[] = isThai
       ? [
           {
-            label: '$(git-commit) สร้างข้อความ Commit (Generate Commit)',
+            label: 'การสร้าง Commit (Commit Generation)',
+            kind: vscode.QuickPickItemKind.Separator
+          },
+          {
+            label: '$(sparkle) สร้างข้อความ Commit (AI 1-Click)',
             description: '1-Click',
             detail: 'วิเคราะห์การเปลี่ยนแปลงและใส่ข้อความลงใน Git commit input box ทันที',
             action: async () => vscode.commands.executeCommand('commitcraft.generate')
@@ -213,46 +217,20 @@ export class CommandManager {
             action: async () => vscode.commands.executeCommand('commitcraft.generateOffline')
           },
           {
-            label: '$(list-unordered) สร้าง 3 ตัวเลือก Commit (3 Options)',
+            label: '$(list-unordered) สร้าง 3 ตัวเลือกสไตล์ (3 Candidates)',
             description: 'เลือกสไตล์',
             detail: 'สร้างตัวเลือก 3 รูปแบบ (Conventional, สั้นกระชับ, ละเอียด)',
             action: async () => vscode.commands.executeCommand('commitcraft.generateCandidates')
+          },
+          {
+            label: 'ความปลอดภัย & จัดการโค้ด (Code Safety & Stash)',
+            kind: vscode.QuickPickItemKind.Separator
           },
           {
             label: '$(shield) ตรวจทานโค้ดก่อน Commit (Code Review)',
             description: 'ตรวจบั๊ก & ความปลอดภัย',
             detail: 'สแกนหาข้อผิดพลาด บั๊ก API Key หลุด และ console.log',
             action: async () => vscode.commands.executeCommand('commitcraft.reviewChanges')
-          },
-          {
-            label: '$(git-pull-request) สร้างคำอธิบาย Pull Request (PR Description)',
-            description: 'Markdown',
-            detail: 'ร่างคำอธิบาย PR สำหรับ GitHub/GitLab จากประวัติ Commit',
-            action: async () => vscode.commands.executeCommand('commitcraft.generatePR')
-          },
-          {
-            label: '$(git-branch) แนะนำชื่อ Branch (Suggest Branch)',
-            description: 'ชื่อมาตรฐาน',
-            detail: 'รับคำแนะนำชื่อ Git branch ตามมาตรฐานจากโค้ดที่แก้',
-            action: async () => vscode.commands.executeCommand('commitcraft.suggestBranch')
-          },
-          {
-            label: '$(notebook) สร้าง/อัปเดต CHANGELOG.md',
-            description: 'Keep a Changelog',
-            detail: 'สร้างหรืออัปเดตไฟล์ CHANGELOG.md ของเวอร์ชันนี้อัตโนมัติ',
-            action: async () => vscode.commands.executeCommand('commitcraft.generateChangelog')
-          },
-          {
-            label: '$(book) อธิบาย Commit นี้ (Commit Explainer)',
-            description: 'AI สรุปเจาะลึก',
-            detail: 'ให้ AI ช่วยวิเคราะห์และอธิบายจุดประสงค์ของ Commit เก่าๆ ในประวัติ Git',
-            action: async () => this.runExplainCommit()
-          },
-          {
-            label: '$(archive) เก็บโค้ดชั่วคราว (Smart Stash WIP)',
-            description: 'AI บันทึก Stash',
-            detail: 'วิเคราะห์โค้ดที่ยังไม่เสร็จแล้วตั้งชื่อ Stash ให้อัตโนมัติใน 1 คลิก',
-            action: async () => smartStash()
           },
           {
             label: '$(discard) ย้อนกลับ Commit ล่าสุด (Safe Undo)',
@@ -267,10 +245,54 @@ export class CommandManager {
             action: async () => resolveMergeConflicts()
           },
           {
+            label: '$(archive) บันทึกโค้ดชั่วคราว (Smart Stash WIP)',
+            description: 'AI บันทึก Stash',
+            detail: 'วิเคราะห์โค้ดที่ยังไม่เสร็จแล้วตั้งชื่อ Stash ให้อัตโนมัติใน 1 คลิก',
+            action: async () => smartStash()
+          },
+          {
+            label: '$(history) เรียกคืนโค้ดจาก Stash (Stash Pop)',
+            description: 'ดึงโค้ดล่าสุด',
+            detail: 'ดึงการแก้ไขที่บันทึกไว้ใน Stash ล่าสุดกลับมาทำงานต่อ',
+            action: async () => popStash()
+          },
+          {
+            label: 'กิ่ง & ปล่อยเวอร์ชัน (Branch & Release)',
+            kind: vscode.QuickPickItemKind.Separator
+          },
+          {
+            label: '$(git-pull-request) สร้างคำอธิบาย Pull Request (PR Description)',
+            description: 'Markdown',
+            detail: 'ร่างคำอธิบาย PR สำหรับ GitHub/GitLab จากประวัติ Commit',
+            action: async () => vscode.commands.executeCommand('commitcraft.generatePR')
+          },
+          {
             label: '$(tag) แนะนำเลข Release Version & Tag (SemVer Suggester)',
             description: 'Semantic Versioning',
             detail: 'วิเคราะห์ประวัติ Commit เพื่อแนะนำเลขเวอร์ชัน Major/Minor/Patch และสร้าง Tag',
             action: async () => suggestReleaseTag()
+          },
+          {
+            label: '$(notebook) สร้าง/อัปเดต CHANGELOG.md',
+            description: 'Keep a Changelog',
+            detail: 'สร้างหรืออัปเดตไฟล์ CHANGELOG.md ของเวอร์ชันนี้อัตโนมัติ',
+            action: async () => vscode.commands.executeCommand('commitcraft.generateChangelog')
+          },
+          {
+            label: '$(git-branch) แนะนำชื่อ Branch (Suggest Branch)',
+            description: 'ชื่อมาตรฐาน',
+            detail: 'รับคำแนะนำชื่อ Git branch ตามมาตรฐานจากโค้ดที่แก้',
+            action: async () => vscode.commands.executeCommand('commitcraft.suggestBranch')
+          },
+          {
+            label: '$(book) อธิบาย Commit นี้ (Commit Explainer)',
+            description: 'AI สรุปเจาะลึก',
+            detail: 'ให้ AI ช่วยวิเคราะห์และอธิบายจุดประสงค์ของ Commit เก่าๆ ในประวัติ Git',
+            action: async () => this.runExplainCommit()
+          },
+          {
+            label: 'การตั้งค่าระบบ (Configuration & Settings)',
+            kind: vscode.QuickPickItemKind.Separator
           },
           {
             label: '$(sparkle) ตัวช่วยตั้งค่าด่วน (Setup Wizard)',
@@ -293,7 +315,11 @@ export class CommandManager {
         ]
       : [
           {
-            label: '$(git-commit) Generate Commit Message',
+            label: 'Commit Generation',
+            kind: vscode.QuickPickItemKind.Separator
+          },
+          {
+            label: '$(sparkle) Generate Commit Message (AI 1-Click)',
             description: 'Default',
             detail: 'Analyze staged changes and populate Git commit input box',
             action: async () => vscode.commands.executeCommand('commitcraft.generate')
@@ -311,40 +337,14 @@ export class CommandManager {
             action: async () => vscode.commands.executeCommand('commitcraft.generateCandidates')
           },
           {
+            label: 'Code Safety & Stash',
+            kind: vscode.QuickPickItemKind.Separator
+          },
+          {
             label: '$(shield) Pre-Commit Code Review',
             description: 'Security & Bug Audit',
             detail: 'Review diff for runtime bugs, credential leaks, and console.logs',
             action: async () => vscode.commands.executeCommand('commitcraft.reviewChanges')
-          },
-          {
-            label: '$(git-pull-request) Generate PR Description',
-            description: 'Markdown',
-            detail: 'Generate full Pull Request markdown description from branch',
-            action: async () => vscode.commands.executeCommand('commitcraft.generatePR')
-          },
-          {
-            label: '$(git-branch) Suggest Branch Name',
-            description: 'Standard naming',
-            detail: 'Get Git branch name suggestions from code changes',
-            action: async () => vscode.commands.executeCommand('commitcraft.suggestBranch')
-          },
-          {
-            label: '$(notebook) Generate CHANGELOG.md',
-            description: 'Keep a Changelog',
-            detail: 'Auto-generate or update CHANGELOG.md for this release',
-            action: async () => vscode.commands.executeCommand('commitcraft.generateChangelog')
-          },
-          {
-            label: '$(book) Explain Commit (Commit Explainer)',
-            description: 'Deep Dive Analysis',
-            detail: 'Have AI explain motivation, changes, and impact of any commit',
-            action: async () => this.runExplainCommit()
-          },
-          {
-            label: '$(archive) Smart Git Stash (WIP Stash Generator)',
-            description: 'Save WIP with AI',
-            detail: 'Analyze uncommitted changes and auto-generate stash message in 1 click',
-            action: async () => smartStash()
           },
           {
             label: '$(discard) Safe Undo Last Commit (Rollback)',
@@ -359,10 +359,54 @@ export class CommandManager {
             action: async () => resolveMergeConflicts()
           },
           {
+            label: '$(archive) Smart Git Stash (WIP Stash Generator)',
+            description: 'Save WIP with AI',
+            detail: 'Analyze uncommitted changes and auto-generate stash message in 1 click',
+            action: async () => smartStash()
+          },
+          {
+            label: '$(history) Restore Stash (Stash Pop)',
+            description: 'Pop latest',
+            detail: 'Pop and apply latest uncommitted stash to workspace',
+            action: async () => popStash()
+          },
+          {
+            label: 'Branch & Release',
+            kind: vscode.QuickPickItemKind.Separator
+          },
+          {
+            label: '$(git-pull-request) Generate PR Description',
+            description: 'Markdown',
+            detail: 'Generate full Pull Request markdown description from branch',
+            action: async () => vscode.commands.executeCommand('commitcraft.generatePR')
+          },
+          {
             label: '$(tag) Suggest Release Version & Tag (SemVer)',
             description: 'Semantic Versioning',
             detail: 'Analyze commits to recommend SemVer bump (Major/Minor/Patch) and tag',
             action: async () => suggestReleaseTag()
+          },
+          {
+            label: '$(notebook) Generate CHANGELOG.md',
+            description: 'Keep a Changelog',
+            detail: 'Auto-generate or update CHANGELOG.md for this release',
+            action: async () => vscode.commands.executeCommand('commitcraft.generateChangelog')
+          },
+          {
+            label: '$(git-branch) Suggest Branch Name',
+            description: 'Standard naming',
+            detail: 'Get Git branch name suggestions from code changes',
+            action: async () => vscode.commands.executeCommand('commitcraft.suggestBranch')
+          },
+          {
+            label: '$(book) Explain Commit (Commit Explainer)',
+            description: 'Deep Dive Analysis',
+            detail: 'Have AI explain motivation, changes, and impact of any commit',
+            action: async () => this.runExplainCommit()
+          },
+          {
+            label: 'Configuration & Settings',
+            kind: vscode.QuickPickItemKind.Separator
           },
           {
             label: '$(sparkle) Quick Setup Wizard',
