@@ -4,6 +4,9 @@ import { Logger } from './logger';
 
 export interface GitStatsSummary {
   currentBranch: string;
+  userName?: string;
+  userEmail?: string;
+  remoteUrl?: string;
   stagedCount: number;
   unstagedCount: number;
   totalCommits: number;
@@ -43,15 +46,23 @@ export async function getRepoGitStats(repo: any, sampleSize: number = 60): Promi
     }
 
     const git = simpleGit(rootPath);
-    const [status, branches, log] = await Promise.all([
+    const [status, branches, log, config, remotes] = await Promise.all([
       git.status().catch(() => null),
       git.branch().catch(() => null),
-      git.log({ maxCount: sampleSize }).catch(() => null)
+      git.log({ maxCount: sampleSize }).catch(() => null),
+      git.listConfig().catch(() => null),
+      git.getRemotes(true).catch(() => null)
     ]);
 
     const currentBranch = branches?.current || 'main';
     const stagedCount = status?.staged?.length || 0;
     const unstagedCount = (status?.modified?.length || 0) + (status?.not_added?.length || 0);
+
+    // Git local user and remote info
+    const userName = (config?.all?.['user.name'] as string) || '';
+    const userEmail = (config?.all?.['user.email'] as string) || '';
+    const originRemote = remotes?.find((r: any) => r.name === 'origin') || remotes?.[0];
+    const remoteUrl = originRemote?.refs?.fetch || originRemote?.refs?.push || '';
 
     const commits = log?.all || [];
     const totalCommits = log?.total || commits.length;
@@ -121,6 +132,9 @@ export async function getRepoGitStats(repo: any, sampleSize: number = 60): Promi
 
     return {
       currentBranch,
+      userName,
+      userEmail,
+      remoteUrl,
       stagedCount,
       unstagedCount,
       totalCommits,

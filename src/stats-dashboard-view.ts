@@ -131,6 +131,8 @@ export class GitStatsDashboardPanel {
     }).join('');
 
     const standupMarkdown = `### Git Activity & Standup Summary
+- **User**: \`${stats.userName || 'Unknown'}\` <${stats.userEmail || ''}>
+- **Remote Origin**: \`${stats.remoteUrl || 'Local only'}\`
 - **Branch**: \`${stats.currentBranch}\`
 - **Total Analyzed Commits**: ${total}
 - **Key Features (\`feat\`)**: ${stats.commitTypes.feat} (${stats.typePercentages.feat}%)
@@ -153,6 +155,8 @@ export class GitStatsDashboardPanel {
     const svgRefactor = `<svg class="icon-svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>`;
     const svgDoc = `<svg class="icon-svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#06b6d4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>`;
     const svgWrench = `<svg class="icon-svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#8b5cf6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>`;
+    const svgUser = `<svg class="icon-svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
+    const svgLink = `<svg class="icon-svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>`;
 
     return `<!DOCTYPE html>
 <html lang="en">
@@ -243,6 +247,26 @@ export class GitStatsDashboardPanel {
       font-weight: 700;
       color: var(--text);
     }
+    .meta-bar {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 24px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      font-size: 13px;
+    }
+    .meta-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-muted);
+    }
+    .meta-pill strong {
+      color: var(--text);
+    }
     .main-section {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -324,6 +348,19 @@ export class GitStatsDashboardPanel {
         ${svgCopy} ${isThai ? 'คัดลอก Standup Report' : 'Copy Standup Report'}
       </button>
     </div>
+  </div>
+
+  <!-- Git Local User & Remote Info Bar -->
+  <div class="meta-bar">
+    <div class="meta-pill">
+      ${svgUser}
+      <span>${isThai ? 'ผู้ใช้งาน Git Local' : 'Local User'}: <strong>${stats.userName || 'Git User'}</strong> ${stats.userEmail ? `&lt;${stats.userEmail}&gt;` : ''}</span>
+    </div>
+    ${stats.remoteUrl ? `
+    <div class="meta-pill">
+      ${svgLink}
+      <span>${isThai ? 'Remote Origin' : 'Remote'}: <strong>${stats.remoteUrl}</strong></span>
+    </div>` : ''}
   </div>
 
   <div class="grid">
