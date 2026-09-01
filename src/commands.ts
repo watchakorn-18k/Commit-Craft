@@ -23,78 +23,91 @@ export class CommandManager {
   registerCommands() {
     // 1. Generate commit message
     this.registerCommand('commitcraft.generate', generateCommitMsg);
+    this.registerCommand('commit-craft-ai.generate', generateCommitMsg);
     this.registerCommand('extension.ai-commit', generateCommitMsg);
 
     // 2. Generate multiple options
     this.registerCommand('commitcraft.generateCandidates', generateMultipleCandidates);
+    this.registerCommand('commit-craft-ai.generateCandidates', generateMultipleCandidates);
     this.registerCommand('ai-commit.generateCandidates', generateMultipleCandidates);
 
     // 3. Pre-Commit Code Review
     this.registerCommand('commitcraft.reviewChanges', reviewStagedChanges);
+    this.registerCommand('commit-craft-ai.reviewChanges', reviewStagedChanges);
     this.registerCommand('ai-commit.reviewChanges', reviewStagedChanges);
 
     // 4. Generate Pull Request Description
     this.registerCommand('commitcraft.generatePR', generatePRDescription);
+    this.registerCommand('commit-craft-ai.generatePR', generatePRDescription);
     this.registerCommand('ai-commit.generatePR', generatePRDescription);
 
     // 5. Suggest Branch Name
     this.registerCommand('commitcraft.suggestBranch', suggestBranchName);
+    this.registerCommand('commit-craft-ai.suggestBranch', suggestBranchName);
     this.registerCommand('ai-commit.suggestBranch', suggestBranchName);
 
     // 6. Generate CHANGELOG.md (Keep a Changelog)
     this.registerCommand('commitcraft.generateChangelog', generateChangelog);
+    this.registerCommand('commit-craft-ai.generateChangelog', generateChangelog);
     this.registerCommand('ai-commit.generateChangelog', generateChangelog);
 
-    // 6. Quick Setup Wizard
+    // 7. Quick Setup Wizard
     const runSetup = async () => {
       await this.runQuickSetupWizard();
     };
     this.registerCommand('commitcraft.quickSetup', runSetup);
+    this.registerCommand('commit-craft-ai.quickSetup', runSetup);
     this.registerCommand('ai-commit.quickSetup', runSetup);
 
-    // 7. Switch Provider
+    // 8. Switch Provider
     const runSwitch = async () => {
       await this.runSwitchProvider();
     };
     this.registerCommand('commitcraft.switchProvider', runSwitch);
+    this.registerCommand('commit-craft-ai.switchProvider', runSwitch);
     this.registerCommand('ai-commit.switchProvider', runSwitch);
 
-    // 8. Select Model
+    // 9. Select Model
     const runModel = async () => {
       await this.runSelectModel();
     };
     this.registerCommand('commitcraft.selectModel', runModel);
+    this.registerCommand('commit-craft-ai.selectModel', runModel);
     this.registerCommand('ai-commit.selectModel', runModel);
 
-    // 9. Switch Commit Style
+    // 10. Switch Commit Style
     const runStyle = async () => {
       await this.runSwitchStyle();
     };
     this.registerCommand('commitcraft.switchStyle', runStyle);
+    this.registerCommand('commit-craft-ai.switchStyle', runStyle);
     this.registerCommand('ai-commit.switchStyle', runStyle);
 
-    // 10. Set API Key
+    // 11. Set API Key
     const runKey = async (targetProviderId?: string) => {
       await this.runSetApiKey(targetProviderId);
     };
     this.registerCommand('commitcraft.setApiKey', runKey);
+    this.registerCommand('commit-craft-ai.setApiKey', runKey);
     this.registerCommand('ai-commit.setApiKey', runKey);
 
-    // 11. Set API Base URL
+    // 12. Set API Base URL
     const runBase = async (targetProviderId?: string) => {
       await this.runSetBaseUrl(targetProviderId);
     };
     this.registerCommand('commitcraft.setBaseUrl', runBase);
+    this.registerCommand('commit-craft-ai.setBaseUrl', runBase);
     this.registerCommand('ai-commit.setBaseUrl', runBase);
 
-    // 12. Switch Language
+    // 13. Switch Language
     const runLang = async () => {
       await this.runSwitchLanguage();
     };
     this.registerCommand('commitcraft.switchLanguage', runLang);
+    this.registerCommand('commit-craft-ai.switchLanguage', runLang);
     this.registerCommand('ai-commit.switchLanguage', runLang);
 
-    // 13. Toggle Emoji
+    // 14. Toggle Emoji
     const runEmoji = async () => {
       const configManager = ConfigurationManager.getInstance();
       const current = configManager.getConfig<boolean>(ConfigKeys.EMOJI_ENABLED, false);
@@ -105,13 +118,15 @@ export class CommandManager {
       );
     };
     this.registerCommand('commitcraft.toggleEmoji', runEmoji);
+    this.registerCommand('commit-craft-ai.toggleEmoji', runEmoji);
     this.registerCommand('ai-commit.toggleEmoji', runEmoji);
 
     // 14. Open Settings
     const runSettings = () => {
-      vscode.commands.executeCommand('workbench.action.openSettings', 'commitcraft');
+      vscode.commands.executeCommand('workbench.action.openSettings', 'CommitCraft');
     };
     this.registerCommand('commitcraft.openSettings', runSettings);
+    this.registerCommand('commit-craft-ai.openSettings', runSettings);
     this.registerCommand('ai-commit.openSettings', runSettings);
 
     // 15. Quick Action Hub / Quick Menu (for 1-click UI without Command Palette)
@@ -119,10 +134,12 @@ export class CommandManager {
       await this.runQuickMenu();
     };
     this.registerCommand('commitcraft.quickMenu', runMenu);
+    this.registerCommand('commit-craft-ai.quickMenu', runMenu);
     this.registerCommand('ai-commit.quickMenu', runMenu);
 
     // Legacy showAvailableModels
     this.registerCommand('commitcraft.showAvailableModels', runModel);
+    this.registerCommand('commit-craft-ai.showAvailableModels', runModel);
     this.registerCommand('ai-commit.showAvailableModels', runModel);
   }
 

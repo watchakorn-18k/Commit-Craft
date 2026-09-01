@@ -35,7 +35,18 @@
   "repository": "https://github.com/watchakorn-18k/Commit-Craft",
   "icon": "images/logo.png",
   "activationEvents": [
-    "onStartupFinished"
+    "onStartupFinished",
+    "onView:commitcraft.scmView",
+    "onView:commitcraft.sidebarView",
+    "onCommand:commitcraft.openSettings",
+    "onCommand:commitcraft.quickSetup",
+    "onCommand:commitcraft.quickMenu",
+    "onCommand:commitcraft.generate",
+    "onCommand:commitcraft.generateCandidates",
+    "onCommand:commitcraft.reviewChanges",
+    "onCommand:commitcraft.generatePR",
+    "onCommand:commitcraft.generateChangelog",
+    "onCommand:commitcraft.suggestBranch"
   ],
   "contributes": {
     "viewsContainers": {
