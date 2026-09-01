@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { generateCommitMsg, generateMultipleCandidates } from './generate-commit-msg';
+import { generateCommitMsg, generateMultipleCandidates, generateOfflineCommit } from './generate-commit-msg';
 import { reviewStagedChanges } from './review-utils';
 import { generatePRDescription } from './pr-utils';
 import { suggestBranchName } from './branch-utils';
@@ -31,6 +31,11 @@ export class CommandManager {
     this.registerCommand('commitcraft.generate', generateCommitMsg);
     this.registerCommand('commit-craft-ai.generate', generateCommitMsg);
     this.registerCommand('extension.ai-commit', generateCommitMsg);
+
+    // 1.1. Generate Offline commit message (No AI required)
+    this.registerCommand('commitcraft.generateOffline', generateOfflineCommit);
+    this.registerCommand('commit-craft-ai.generateOffline', generateOfflineCommit);
+    this.registerCommand('ai-commit.generateOffline', generateOfflineCommit);
 
     // 2. Generate multiple options
     this.registerCommand('commitcraft.generateCandidates', generateMultipleCandidates);
@@ -184,6 +189,12 @@ export class CommandManager {
             action: async () => vscode.commands.executeCommand('commitcraft.generate')
           },
           {
+            label: '$(plug) สร้างข้อความ Commit แบบออฟไลน์ (Offline Commit)',
+            description: '0 AI / ไม่ใช้เน็ต',
+            detail: 'วิเคราะห์ไฟล์สร้างข้อความ Commit อัตโนมัติโดยตรงในเครื่อง ไม่พึ่งพา AI',
+            action: async () => vscode.commands.executeCommand('commitcraft.generateOffline')
+          },
+          {
             label: '$(list-unordered) สร้าง 3 ตัวเลือก Commit (3 Options)',
             description: 'เลือกสไตล์',
             detail: 'สร้างตัวเลือก 3 รูปแบบ (Conventional, สั้นกระชับ, ละเอียด)',
@@ -250,6 +261,12 @@ export class CommandManager {
             description: 'Default',
             detail: 'Analyze staged changes and populate Git commit input box',
             action: async () => vscode.commands.executeCommand('commitcraft.generate')
+          },
+          {
+            label: '$(plug) Generate Offline Commit (No AI)',
+            description: '0 AI tokens / Offline',
+            detail: 'Instantly generate commit message locally from file diff without AI',
+            action: async () => vscode.commands.executeCommand('commitcraft.generateOffline')
           },
           {
             label: '$(list-unordered) Generate 3 Commit Options',

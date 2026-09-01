@@ -12,6 +12,7 @@ import {
 } from './git-utils';
 import { detectMonorepoScope } from './scope-detector';
 import { getMainCommitPrompt, getMultipleCandidatesPrompt } from './prompts';
+import { generateHeuristicCommitMessage } from './heuristic-commit';
 import { ProgressHandler } from './utils';
 import { Logger } from './logger';
 
@@ -192,25 +193,76 @@ export async function generateCommitMsg(arg?: any): Promise<void> {
           throw new Error('AI returned an empty response.');
         }
       } catch (err: any) {
-        Logger.error(`${provider.name} request failed:`, err);
+        Logger.error(`${provider.name} request failed, falling back to Offline Heuristic mode:`, err);
         const errorMsg = err?.message || String(err);
+        const isThai = configManager.getConfig<string>(ConfigKeys.DISPLAY_LANGUAGE, 'th') === 'th';
+        const language = configManager.getConfig<string>(ConfigKeys.AI_COMMIT_LANGUAGE, 'Thai');
 
-        const retryChoice = await vscode.window.showErrorMessage(
-          `CommitCraft failed: ${errorMsg}`,
-          'Retry',
-          'Quick Setup',
-          'Settings'
+        // Automatic Smart Fallback without AI
+        const stagedPaths = await getStagedFilePaths(repo);
+        const branchName = await getCurrentBranch(repo);
+        const fallbackMsg = generateHeuristicCommitMessage({
+          branchName,
+          files: stagedPaths,
+          diff,
+          language
+        });
+
+        scmInputBox.value = fallbackMsg;
+        await vscode.commands.executeCommand('workbench.view.scm');
+
+        vscode.window.showWarningMessage(
+          isThai
+            ? `AI ไม่พร้อมใช้งาน (${errorMsg}) — สลับไปสร้างข้อความแบบ Auto Offline ให้ทันทีเรียบร้อยแล้ว!`
+            : `AI unavailable (${errorMsg}) — Auto-generated commit message using Offline Heuristics.`
         );
-
-        if (retryChoice === 'Retry') {
-          return generateCommitMsg(arg);
-        } else if (retryChoice === 'Quick Setup') {
-          await vscode.commands.executeCommand('commitcraft.quickSetup');
-        } else if (retryChoice === 'Settings') {
-          await vscode.commands.executeCommand('commitcraft.openSettings');
-        }
       }
     }
+  );
+}
+
+/**
+ * Standalone Offline Commit Message Generator (0 AI tokens / 0 Internet required)
+ */
+export async function generateOfflineCommit(arg?: any): Promise<void> {
+  const configManager = ConfigurationManager.getInstance();
+  const isThai = configManager.getConfig<string>(ConfigKeys.DISPLAY_LANGUAGE, 'th') === 'th';
+  const language = configManager.getConfig<string>(ConfigKeys.AI_COMMIT_LANGUAGE, 'Thai');
+
+  let repo: any;
+  try {
+    repo = await getRepo(arg);
+  } catch (err: any) {
+    vscode.window.showErrorMessage(err?.message || 'No Git repository found.');
+    return;
+  }
+
+  const scmInputBox = repo.inputBox;
+  if (!scmInputBox) {
+    vscode.window.showErrorMessage('Unable to locate the Git SCM input box.');
+    return;
+  }
+
+  const diff = await prepareDiff(repo);
+  if (!diff) {
+    return;
+  }
+
+  const stagedPaths = await getStagedFilePaths(repo);
+  const branchName = await getCurrentBranch(repo);
+
+  const fallbackMsg = generateHeuristicCommitMessage({
+    branchName,
+    files: stagedPaths,
+    diff,
+    language
+  });
+
+  scmInputBox.value = fallbackMsg;
+  await vscode.commands.executeCommand('workbench.view.scm');
+
+  vscode.window.showInformationMessage(
+    isThai ? 'สร้างข้อความ Commit แบบออฟไลน์ (Offline Mode) เรียบร้อยแล้ว!' : 'Generated commit message in Offline Mode!'
   );
 }
 

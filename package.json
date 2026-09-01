@@ -76,8 +76,13 @@
     "commands": [
       {
         "command": "commitcraft.generate",
-        "icon": "$(git-commit)",
-        "title": "CommitCraft: สร้างข้อความ Commit (Generate Commit)"
+        "icon": "$(sparkle)",
+        "title": "CommitCraft: สร้างข้อความ Commit (AI 1-Click)"
+      },
+      {
+        "command": "commitcraft.generateOffline",
+        "icon": "$(plug)",
+        "title": "CommitCraft: สร้าง Commit แบบออฟไลน์ (Offline Mode)"
       },
       {
         "command": "commitcraft.generateCandidates",

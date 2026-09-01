@@ -104,6 +104,19 @@ export class CommitCraftTreeDataProvider
           }
         ),
         new CommitCraftTreeItem(
+          isThai ? 'สร้าง Commit แบบออฟไลน์ (Offline Commit)' : 'Generate Offline Commit',
+          vscode.TreeItemCollapsibleState.None,
+          {
+            description: isThai ? '0 AI / ไม่ใช้เน็ต' : '0 AI / Offline',
+            tooltip: isThai ? 'วิเคราะห์ไฟล์สร้างข้อความ Commit อัตโนมัติโดยตรงในเครื่อง ไม่พึ่งพา AI' : 'Generate commit message instantly without AI / Internet connection',
+            iconPath: new vscode.ThemeIcon('plug'),
+            command: {
+              command: 'commitcraft.generateOffline',
+              title: 'Generate Offline Commit'
+            }
+          }
+        ),
+        new CommitCraftTreeItem(
           isThai ? 'สร้าง 3 ตัวเลือก Commit (3 Options)' : 'Generate 3 Commit Options',
           vscode.TreeItemCollapsibleState.None,
           {
