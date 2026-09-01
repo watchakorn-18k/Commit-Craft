@@ -449,5 +449,41 @@ Output: docs: update readme and fix typos in documentation
   ];
 };
 
+/**
+ * Builds prompt for synthesizing multiple micro-commits into 1 clean squash/rebase commit
+ */
+export const getSquashPrompt = (
+  commitsList: string,
+  diff: string,
+  language: string = 'English'
+) => {
+  return [
+    {
+      role: 'system',
+      content: `You are an expert software engineer performing a Git Squash / Interactive Rebase.
+Your task is to analyze a series of micro-commits (WIPs, quick fixes, typo corrections, partial implementations) along with their cumulative diff, and synthesize them into a SINGLE clean, cohesive Conventional Commit message.
+
+Language: ${language}.
+Format Requirements:
+<type>(<scope>): <high-level imperative summary>
+
+- <bullet point of key feature or change 1>
+- <bullet point of key feature or change 2>
+- <bullet point of key bug fix or cleanup>
+
+Rules:
+1. Ignore trivial WIP or typo messages from the history; focus on the holistic engineering impact of the combined work.
+2. Strictly NO emojis, NO backticks around the whole message, NO markdown commentary or reasoning outside the commit text.
+3. Output ONLY the finalized commit message.
+`
+    },
+    {
+      role: 'user',
+      content: `Commits being squashed:\n${commitsList}\n\nCumulative Diff:\n${diff}`
+    }
+  ];
+};
+
+
 
 

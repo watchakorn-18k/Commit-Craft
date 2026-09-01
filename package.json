@@ -145,6 +145,16 @@
         "title": "CommitCraft: แปลโน้ตเป็น Conventional Commit (TH → EN Translator)"
       },
       {
+        "command": "commitcraft.cleanBranches",
+        "icon": "$(trash)",
+        "title": "CommitCraft: ลบกิ่งที่ Merge แล้ว (Clean Ghost Branches)"
+      },
+      {
+        "command": "commitcraft.squashSummary",
+        "icon": "$(git-merge)",
+        "title": "CommitCraft: สรุปรวมหลาย Commit (Squash & Rebase Summarizer)"
+      },
+      {
         "command": "commitcraft.quickMenu",
         "icon": "$(zap)",
         "title": "CommitCraft: เมนูด่วน (Quick Action Hub)"

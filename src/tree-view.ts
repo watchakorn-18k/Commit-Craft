@@ -263,6 +263,32 @@ export class CommitCraftTreeDataProvider
           }
         ),
         new CommitCraftTreeItem(
+          isThai ? 'สรุปรวมหลาย Commit (Squash & Rebase)' : 'Synthesize Squash Commits',
+          vscode.TreeItemCollapsibleState.None,
+          {
+            description: 'AI Squash',
+            tooltip: isThai ? 'วิเคราะห์รวมหลาย Commit ย่อยให้เป็น 1 Clean Commit สำหรับ Squash Merge' : 'Synthesize multiple WIP commits into 1 clean Conventional Commit',
+            iconPath: new vscode.ThemeIcon('git-merge'),
+            command: {
+              command: 'commitcraft.squashSummary',
+              title: 'Squash & Rebase Summarizer'
+            }
+          }
+        ),
+        new CommitCraftTreeItem(
+          isThai ? 'ลบกิ่งที่ Merge แล้ว (Clean Ghost Branches)' : 'Clean Merged Branches',
+          vscode.TreeItemCollapsibleState.None,
+          {
+            description: isThai ? 'จัดระเบียบ Repo' : 'Repo hygiene',
+            tooltip: isThai ? 'สแกนหากิ่ง Local Branches ที่ Merge เข้า main/master แล้ว และลบทิ้งใน 1 คลิก' : 'Scan and delete merged local branches cleanly in 1 click',
+            iconPath: new vscode.ThemeIcon('trash'),
+            command: {
+              command: 'commitcraft.cleanBranches',
+              title: 'Clean Merged Branches'
+            }
+          }
+        ),
+        new CommitCraftTreeItem(
           isThai ? 'สร้าง/อัปเดต CHANGELOG.md' : 'Generate CHANGELOG.md',
           vscode.TreeItemCollapsibleState.None,
           {

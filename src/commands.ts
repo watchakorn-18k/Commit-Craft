@@ -8,6 +8,8 @@ import { safeUndoCommit } from './undo-utils';
 import { resolveMergeConflicts } from './conflict-utils';
 import { suggestReleaseTag } from './tag-utils';
 import { translateCommitMessage } from './translate-utils';
+import { cleanGhostBranches } from './branch-cleaner';
+import { summarizeSquashCommits } from './squash-utils';
 import {
   ConfigKeys,
   ConfigurationManager,
@@ -102,6 +104,16 @@ export class CommandManager {
     this.registerCommand('commitcraft.translateCommit', translateCommitMessage);
     this.registerCommand('commit-craft-ai.translateCommit', translateCommitMessage);
     this.registerCommand('ai-commit.translateCommit', translateCommitMessage);
+
+    // 6.7. Clean Ghost Branches (Merged)
+    this.registerCommand('commitcraft.cleanBranches', cleanGhostBranches);
+    this.registerCommand('commit-craft-ai.cleanBranches', cleanGhostBranches);
+    this.registerCommand('ai-commit.cleanBranches', cleanGhostBranches);
+
+    // 6.8. Git Squash & Rebase Summarizer
+    this.registerCommand('commitcraft.squashSummary', summarizeSquashCommits);
+    this.registerCommand('commit-craft-ai.squashSummary', summarizeSquashCommits);
+    this.registerCommand('ai-commit.squashSummary', summarizeSquashCommits);
 
     // 7. Quick Setup Wizard
     const runSetup = async () => {
@@ -285,6 +297,18 @@ export class CommandManager {
             action: async () => suggestReleaseTag()
           },
           {
+            label: '$(git-merge) สรุปรวมหลาย Commit (Squash & Rebase Summarizer)',
+            description: 'AI รวม Commit',
+            detail: 'วิเคราะห์รวมหลาย Commit ย่อยให้เป็น 1 Clean Commit สำหรับ Squash Merge',
+            action: async () => summarizeSquashCommits()
+          },
+          {
+            label: '$(trash) ลบกิ่งที่ Merge แล้ว (Clean Ghost Branches)',
+            description: 'จัดระเบียบ Repo',
+            detail: 'สแกนหากิ่ง Local Branches ที่ Merge เข้า main/master แล้ว และลบทิ้งใน 1 คลิก',
+            action: async () => cleanGhostBranches()
+          },
+          {
             label: '$(notebook) สร้าง/อัปเดต CHANGELOG.md',
             description: 'Keep a Changelog',
             detail: 'สร้างหรืออัปเดตไฟล์ CHANGELOG.md ของเวอร์ชันนี้อัตโนมัติ',
@@ -403,6 +427,18 @@ export class CommandManager {
             description: 'Semantic Versioning',
             detail: 'Analyze commits to recommend SemVer bump (Major/Minor/Patch) and tag',
             action: async () => suggestReleaseTag()
+          },
+          {
+            label: '$(git-merge) Synthesize Commits (Squash & Rebase Summarizer)',
+            description: 'AI Squash',
+            detail: 'Synthesize multiple WIP commits into 1 clean Conventional Commit message',
+            action: async () => summarizeSquashCommits()
+          },
+          {
+            label: '$(trash) Clean Merged Local Branches (Ghost Cleaner)',
+            description: 'Repo hygiene',
+            detail: 'Scan and delete merged local branches cleanly in 1 click',
+            action: async () => cleanGhostBranches()
           },
           {
             label: '$(notebook) Generate CHANGELOG.md',

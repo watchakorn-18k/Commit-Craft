@@ -585,3 +585,129 @@ export async function gitCreateTag(repo: any, tagName: string, message?: string)
   }
 }
 
+/**
+ * Find local branches that have been merged into the base branch (main/master)
+ */
+export async function getMergedBranches(
+  repo: any,
+  baseBranch?: string
+): Promise<Array<{ name: string; lastCommit: string }>> {
+  const rootPath =
+    repo?.rootUri?.fsPath || vscode.workspace.workspaceFolders?.[0].uri.fsPath;
+  if (!rootPath) {
+    return [];
+  }
+  const git = simpleGit(rootPath);
+  const branches = await git.branchLocal();
+  const current = branches.current;
+
+  let targetBase = baseBranch;
+  if (!targetBase) {
+    if (branches.all.includes('main')) {
+      targetBase = 'main';
+    } else if (branches.all.includes('master')) {
+      targetBase = 'master';
+    } else if (branches.all.includes('develop')) {
+      targetBase = 'develop';
+    } else {
+      targetBase = current;
+    }
+  }
+
+  try {
+    const mergedOutput = await git.branch(['--merged', targetBase]);
+    const protectedBranches = new Set(['main', 'master', 'develop', 'dev', 'staging', 'production', current]);
+
+    const mergedList: Array<{ name: string; lastCommit: string }> = [];
+    for (const b of mergedOutput.all) {
+      const cleanName = b.trim().replace(/^\*\s*/, '');
+      if (!protectedBranches.has(cleanName) && branches.all.includes(cleanName)) {
+        let lastCommitMsg = '';
+        try {
+          const log = await git.log({ maxCount: 1, from: cleanName });
+          if (log.latest) {
+            lastCommitMsg = `${log.latest.message} (${log.latest.date.split('T')[0]})`;
+          }
+        } catch {
+          // Ignore log retrieval failure
+        }
+        mergedList.push({ name: cleanName, lastCommit: lastCommitMsg });
+      }
+    }
+    return mergedList;
+  } catch (error) {
+    Logger.error('Failed to get merged branches:', error);
+    return [];
+  }
+}
+
+/**
+ * Deletes local branches by name
+ */
+export async function deleteLocalBranches(
+  repo: any,
+  branchNames: string[],
+  force: boolean = false
+): Promise<{ success: string[]; failed: Array<{ branch: string; error: string }> }> {
+  const rootPath =
+    repo?.rootUri?.fsPath || vscode.workspace.workspaceFolders?.[0].uri.fsPath;
+  if (!rootPath) {
+    throw new Error('No workspace folder found');
+  }
+  const git = simpleGit(rootPath);
+  const success: string[] = [];
+  const failed: Array<{ branch: string; error: string }> = [];
+
+  for (const branch of branchNames) {
+    try {
+      await git.branch([force ? '-D' : '-d', branch]);
+      success.push(branch);
+    } catch (err: any) {
+      failed.push({ branch, error: err?.message || String(err) });
+    }
+  }
+
+  return { success, failed };
+}
+
+/**
+ * Get commit list and cumulative diff for squashing
+ */
+export async function getCommitsForSquash(
+  repo: any,
+  count: number = 5
+): Promise<{ commits: Array<{ hash: string; message: string; author: string }>; diff: string; error?: string | null }> {
+  try {
+    const rootPath =
+      repo?.rootUri?.fsPath || vscode.workspace.workspaceFolders?.[0].uri.fsPath;
+    if (!rootPath) {
+      throw new Error('No workspace folder found');
+    }
+    const git = simpleGit(rootPath);
+    const log = await git.log({ maxCount: count });
+
+    if (!log.all || log.all.length === 0) {
+      return { commits: [], diff: '', error: 'No commits found.' };
+    }
+
+    const oldestHash = log.all[log.all.length - 1].hash;
+    const diff = await git.diff([`${oldestHash}^...HEAD`]).catch(async () => {
+      return await git.diff([`${oldestHash}...HEAD`]);
+    });
+
+    return {
+      commits: log.all.map((c) => ({
+        hash: c.hash.substring(0, 7),
+        message: c.message,
+        author: c.author_name
+      })),
+      diff: filterAndCompressDiff(diff || '', 30000),
+      error: null
+    };
+  } catch (error: any) {
+    Logger.error('Failed to get commits for squash:', error);
+    return { commits: [], diff: '', error: error?.message || String(error) };
+  }
+}
+
+

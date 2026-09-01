@@ -1,0 +1,84 @@
+import * as vscode from 'vscode';
+import { getRepo, getMergedBranches, deleteLocalBranches } from './git-utils';
+import { ConfigKeys, ConfigurationManager } from './config';
+import { Logger } from './logger';
+
+/**
+ * Scans for local branches that have been merged into main/master and allows 1-click safe cleanup.
+ */
+export async function cleanGhostBranches(arg?: any): Promise<void> {
+  const configManager = ConfigurationManager.getInstance();
+  const isThai = configManager.getConfig<string>(ConfigKeys.DISPLAY_LANGUAGE, 'th') === 'th';
+
+  let repo: any;
+  try {
+    repo = await getRepo(arg);
+  } catch (err: any) {
+    vscode.window.showErrorMessage(err?.message || 'No Git repository found.');
+    return;
+  }
+
+  const mergedBranches = await getMergedBranches(repo);
+
+  if (mergedBranches.length === 0) {
+    vscode.window.showInformationMessage(
+      isThai
+        ? 'ยอดเยี่ยม! ไม่พบกิ่ง (Branch) ที่ถูก Merge ค้างไว้ในเครื่อง คลังเก็บโค้ดของคุณสะอาดเรียบร้อย'
+        : 'All clean! No merged local branches found in this repository.'
+    );
+    return;
+  }
+
+  const items = mergedBranches.map((b) => ({
+    label: `$(git-branch) ${b.name}`,
+    description: b.lastCommit ? `Commit ล่าสุด: ${b.lastCommit}` : 'Merged',
+    picked: true,
+    branchName: b.name
+  }));
+
+  const selected = await vscode.window.showQuickPick(items, {
+    title: isThai
+      ? `CommitCraft: พบคลังกิ่งที่ Merge แล้ว ${mergedBranches.length} กิ่ง (Clean Ghost Branches)`
+      : `CommitCraft: Found ${mergedBranches.length} Merged Branches to Clean`,
+    placeHolder: isThai
+      ? 'เลือกกิ่งที่ต้องการลบทิ้งออกจากเครื่อง (กดเว้นวรรคเพื่อเลือก/ยกเลิก)'
+      : 'Select merged branches to delete locally (Space to toggle)',
+    canPickMany: true
+  });
+
+  if (!selected || selected.length === 0) {
+    return;
+  }
+
+  const branchNames = selected.map((s) => s.branchName);
+
+  const confirmMsg = isThai
+    ? `คุณแน่ใจหรือไม่ว่าต้องการลบกิ่งที่เลือก ${branchNames.length} กิ่งนี้ (${branchNames.join(', ')})?`
+    : `Are you sure you want to delete ${branchNames.length} merged branch(es) (${branchNames.join(', ')})?`;
+
+  const btnDelete = isThai ? 'ยืนยันลบกิ่ง' : 'Confirm Delete';
+  const btnCancel = isThai ? 'ยกเลิก' : 'Cancel';
+
+  const choice = await vscode.window.showWarningMessage(confirmMsg, { modal: true }, btnDelete, btnCancel);
+  if (choice !== btnDelete) {
+    return;
+  }
+
+  const result = await deleteLocalBranches(repo, branchNames);
+
+  if (result.success.length > 0) {
+    const successText = isThai
+      ? `ลบกิ่งที่ Merge แล้วสำเร็จ ${result.success.length} กิ่ง: ${result.success.join(', ')}`
+      : `Successfully deleted ${result.success.length} merged branch(es): ${result.success.join(', ')}`;
+    vscode.window.showInformationMessage(successText);
+  }
+
+  if (result.failed.length > 0) {
+    const failedList = result.failed.map((f) => `${f.branch} (${f.error})`).join(', ');
+    vscode.window.showErrorMessage(
+      isThai
+        ? `ไม่สามารถลบได้บางกิ่ง: ${failedList}`
+        : `Failed to delete some branches: ${failedList}`
+    );
+  }
+}
