@@ -35,7 +35,7 @@
   "repository": "https://github.com/watchakorn-18k/Commit-Craft",
   "icon": "images/logo.png",
   "activationEvents": [
-    "onStartupFinished",
+    "onView:commitcraft.statsView",
     "onView:commitcraft.scmView",
     "onView:commitcraft.sidebarView",
     "onCommand:commitcraft.openSettings",
@@ -67,6 +67,11 @@
         }
       ],
       "commitcraft-sidebar": [
+        {
+          "type": "webview",
+          "id": "commitcraft.statsView",
+          "name": "Git Visual Insights"
+        },
         {
           "id": "commitcraft.sidebarView",
           "name": "CommitCraft Assistant"
