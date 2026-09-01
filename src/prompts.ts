@@ -1,120 +1,196 @@
 import { ConfigKeys, ConfigurationManager } from './config';
 
-/**
- * Initializes the main prompt for generating commit messages.
- *
- * @param {string} language - The language to be used in the prompt.
- * @returns {Object} - The main prompt object containing role and content.
- */
-const INIT_MAIN_PROMPT = (language: string) => ({
-  role: 'system',
-  content:
-    ConfigurationManager.getInstance().getConfig<string>(ConfigKeys.SYSTEM_PROMPT) ||
-    `# Git Commit Message Guide
-
-## Role and Purpose
-
-You will act as a git commit message generator. When receiving a git diff, you will ONLY output the commit message itself, nothing else. No explanations, no questions, no additional comments.
-
-## Output Format
-
-### Single Type Changes
-
-\`\`\`
-<emoji> <type>(<scope>): <subject>
-  <body>
-\`\`\`
-
-### Multiple Type Changes
-
-\`\`\`
-<emoji> <type>(<scope>): <subject>
-  <body of type 1>
-
-<emoji> <type>(<scope>): <subject>
-  <body of type 2>
-...
-\`\`\`
-
-## Type Reference
-
-| Type     | Emoji | Description          | Example Scopes      |
-| -------- | ----- | -------------------- | ------------------- |
-| feat     | ✨    | New feature          | user, payment       |
-| fix      | 🐛    | Bug fix              | auth, data          |
-| docs     | 📝    | Documentation        | README, API         |
-| style    | 💄    | Code style           | formatting          |
-| refactor | ♻️    | Code refactoring     | utils, helpers      |
-| perf     | ⚡️   | Performance          | query, cache        |
-| test     | ✅    | Testing              | unit, e2e           |
-| build    | 📦    | Build system         | webpack, npm        |
-| ci       | 👷    | CI config            | Travis, Jenkins     |
-| chore    | 🔧    | Other changes        | scripts, config     |
-| i18n     | 🌐    | Internationalization | locale, translation |
-
-## Writing Rules
-
-### Subject Line
-
-- Scope must be in English
-- Imperative mood
-- No capitalization
-- No period at end
-- Max 50 characters
-- Must be in ${language}
-
-### Body
-
-- Bullet points with "-"
-- Max 72 chars per line
-- Explain what and why
-- Must be in ${language}
-- Use【】for different types
-
-## Critical Requirements
-
-1. Output ONLY the commit message
-2. Write ONLY in ${language}
-3. NO additional text or explanations
-4. NO questions or comments
-5. NO formatting instructions or metadata
-
-## Additional Context
-
-If provided, consider any additional context about the changes when generating the commit message. This context will be provided before the diff and should influence the final commit message while maintaining all other formatting rules.
-
-## Examples
-
-INPUT:
-
-diff --git a/src/server.ts b/src/server.ts\n index ad4db42..f3b18a9 100644\n --- a/src/server.ts\n +++ b/src/server.ts\n @@ -10,7 +10,7 @@\n import {\n initWinstonLogger();
-\n \n const app = express();
-\n -const port = 7799;
-\n +const PORT = 7799;
-\n \n app.use(express.json());
-\n \n @@ -34,6 +34,6 @@\n app.use((\_, res, next) => {\n // ROUTES\n app.use(PROTECTED_ROUTER_URL, protectedRouter);
-\n \n -app.listen(port, () => {\n - console.log(\`Server listening on port \$\{port\}\`);
-\n +app.listen(process.env.PORT || PORT, () => {\n + console.log(\`Server listening on port \$\{PORT\}\`);
-\n });
-
-OUTPUT:
-
-♻️ refactor(server): optimize server port configuration
-
-- rename port variable to uppercase (PORT) to follow constant naming convention
-- add environment variable port support for flexible deployment
-
-Remember: All output MUST be in ${language} language. You are to act as a pure commit message generator. Your response should contain NOTHING but the commit message itself.`
-});
+export interface PromptOptions {
+  language?: string;
+  emojiEnabled?: boolean;
+  commitStyle?: string;
+  issueTag?: string | null;
+}
 
 /**
- * Retrieves the main commit prompt.
- *
- * @returns {Promise<Array<Object>>} - A promise that resolves to an array of prompts.
+ * Builds the system prompt for single commit message generation.
  */
-export const getMainCommitPrompt = async () => {
-  const language = ConfigurationManager.getInstance().getConfig<string>(
-    ConfigKeys.AI_COMMIT_LANGUAGE
-  );
-  return [INIT_MAIN_PROMPT(language)];
+export const getMainCommitPrompt = async (options?: PromptOptions) => {
+  const configManager = ConfigurationManager.getInstance();
+  const language = options?.language || configManager.getConfig<string>(ConfigKeys.AI_COMMIT_LANGUAGE, 'English');
+  const emojiEnabled = options?.emojiEnabled ?? configManager.getConfig<boolean>(ConfigKeys.EMOJI_ENABLED, false);
+  const commitStyle = options?.commitStyle || configManager.getConfig<string>(ConfigKeys.COMMIT_STYLE, 'conventional');
+  const issueTag = options?.issueTag;
+
+  const customPrompt = configManager.getConfig<string>(ConfigKeys.AI_COMMIT_SYSTEM_PROMPT);
+  if (customPrompt && customPrompt.trim().length > 0) {
+    return [{ role: 'system', content: customPrompt.trim() }];
+  }
+
+  const prefix = issueTag ? `[${issueTag}] ` : '';
+  let styleInstruction = '';
+
+  if (commitStyle === 'simple') {
+    styleInstruction = `Generate a single concise one-line commit message without body. Format: ${prefix}<type>(<scope>): <subject>`;
+  } else if (commitStyle === 'detailed') {
+    styleInstruction = `Generate a structured commit message with a clear subject and concise bullet points explaining WHAT changed, WHY it changed, and technical details.`;
+  } else {
+    styleInstruction = `Generate a standard Conventional Commit message with a subject and 1-3 concise bullet points.`;
+  }
+
+  const emojiRule = emojiEnabled
+    ? 'Prefix the subject line with a relevant Gitmoji (e.g. feat -> ✨, fix -> 🐛, docs -> 📝, refactor -> ♻️).'
+    : 'Do NOT include any emoji in the commit message.';
+
+  return [
+    {
+      role: 'system',
+      content: `You are a Git commit generator. Analyze the diff and generate a clean, professional Conventional Commit message.
+
+Rules:
+1. Output ONLY the raw commit message text. No markdown code blocks, quotes, introductions, or explanations.
+2. Subject line: maximum 60 characters, imperative present tense ("add" not "added"), no trailing period, written in ${language} (type and scope must remain standard English).
+3. ${emojiRule}
+4. ${issueTag ? `Include ticket tag '${issueTag}' in the subject.` : ''}
+5. ${styleInstruction}
+
+Format:
+${prefix}<type>(<scope>): <subject>
+
+- <bullet 1>
+- <bullet 2>
+`
+    }
+  ];
+};
+
+/**
+ * Builds prompt to generate 3 distinct candidate commit messages for the user to pick from.
+ */
+export const getMultipleCandidatesPrompt = (
+  diff: string,
+  options?: PromptOptions
+) => {
+  const language = options?.language || 'English';
+  const emoji = options?.emojiEnabled ? 'with Gitmoji' : 'without emoji';
+  const issueTag = options?.issueTag ? `Ticket tag: ${options.issueTag}` : '';
+
+  return [
+    {
+      role: 'system',
+      content: `You are a Git commit generator.
+Generate exactly 3 different commit message candidates for the provided diff in JSON format.
+Language: ${language}.
+Emoji: ${emoji}.
+${issueTag}
+
+Output MUST be a valid JSON array of objects:
+[
+  {
+    "style": "Conventional",
+    "message": "feat(scope): subject\\n\\n- detail 1\\n- detail 2"
+  },
+  {
+    "style": "Concise",
+    "message": "feat(scope): concise single line subject"
+  },
+  {
+    "style": "Detailed",
+    "message": "feat(scope): subject\\n\\n- detailed explanation of changes\\n- context and rationale"
+  }
+]
+Output ONLY valid JSON.`
+    },
+    {
+      role: 'user',
+      content: `Git Diff:\n\n${diff}`
+    }
+  ];
+};
+
+/**
+ * Builds prompt for Pre-Commit Code Review
+ */
+export const getPreCommitReviewPrompt = (diff: string, language: string = 'English') => {
+  return [
+    {
+      role: 'system',
+      content: `You are a senior software engineer and security auditor conducting a pre-commit review.
+Analyze the following git diff carefully.
+
+Review Areas:
+1. Bugs & Logic Flaws: potential runtime errors, unhandled rejections, memory leaks, null/undefined safety.
+2. Security & Credentials: hardcoded API keys, passwords, tokens, sensitive data exposure.
+3. Leftover Debug Code: console.log, debugger, print statements, temporary hacks.
+4. Performance: unnecessary computations, inefficient loops.
+
+Language: ${language}.
+
+Output format (clean Markdown, avoid decorative fluff):
+## Pre-Commit Code Review
+
+### Summary
+[Verdict: Ready to commit / Needs attention / Critical issues found]
+
+### Issues Detected
+- [File & Line]: Description + recommended fix
+
+### Recommendations
+- [Concise improvement notes if any]
+
+If no issues are found, state clearly that the staged changes look clean and ready to commit.`
+    },
+    {
+      role: 'user',
+      content: `Git Diff to Review:\n\n${diff}`
+    }
+  ];
+};
+
+/**
+ * Builds prompt for Pull Request description generator
+ */
+export const getPRDescriptionPrompt = (diff: string, commits: string, language: string = 'English') => {
+  return [
+    {
+      role: 'system',
+      content: `You are a software engineer drafting a clean Pull Request description.
+Language: ${language}.
+
+Format (clean Markdown):
+## Overview
+[Concise summary of the PR's purpose]
+
+## Changes
+- **Module**: Brief description of change
+- **Refactor/Fix**: Brief description of change
+
+## Testing Instructions
+1. Steps to verify changes locally
+2. Key edge cases tested
+
+## Checklist
+- [x] Code adheres to repository guidelines
+- [x] Tested locally and verified
+- [ ] Relevant tests added or updated
+`
+    },
+    {
+      role: 'user',
+      content: `Commits in Branch:\n${commits}\n\nBranch Diff:\n${diff}`
+    }
+  ];
+};
+
+/**
+ * Builds prompt for branch name suggestions
+ */
+export const getBranchNamePrompt = (diff: string) => {
+  return [
+    {
+      role: 'system',
+      content: `Suggest 4 clean, standard git branch names based on the diff (e.g. feat/..., fix/..., refactor/..., chore/...).
+Output ONLY a JSON array of strings:
+["feat/user-auth", "feat/google-oauth", "fix/session-token-expiry", "chore/update-dependencies"]`
+    },
+    {
+      role: 'user',
+      content: `Git Diff:\n\n${diff}`
+    }
+  ];
 };

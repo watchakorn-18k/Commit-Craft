@@ -1,220 +1,471 @@
 {
-  "name": "ai-commit",
-  "displayName": "AI Commit",
-  "description": "Use OpenAI/Gemini/Claude/Azure API to review Git changes, generate conventional commit messages that meet the conventions, simplify the commit process, and keep the commit conventions consistent.",
-  "version": "0.1.2",
+  "name": "commitcraft",
+  "displayName": "CommitCraft",
+  "description": "CommitCraft — Smart Git AI Assistant for Commit Messages, Pre-Commit Code Reviews, PR Descriptions & Branch Naming.",
+  "version": "0.1.0",
   "engines": {
     "node": ">=16",
     "vscode": "^1.77.0"
   },
   "categories": [
-    "Other"
+    "Other",
+    "SCM Providers"
   ],
   "keywords": [
-    "Azure",
-    "OpenAI",
-    "ChatGPT",
+    "CommitCraft",
+    "commitcraft",
     "Gemini",
+    "OpenAI",
     "Claude",
-    "Anthropic",
-    "GitEmoji",
-    "Git Commit",
+    "DeepSeek",
+    "Ollama",
+    "Copilot",
+    "Groq",
+    "OpenRouter",
+    "Git",
+    "Commit",
+    "Code Review",
+    "Pull Request",
     "Conventional Commits",
-    "Commitizen",
-    "Commit Message",
-    "Commit Message Generator",
-    "AI Commit",
+    "Gitmoji",
     "Auto Commit"
   ],
   "publisher": "sitoi",
-  "repository": "https://github.com/sitoi/ai-commit",
+  "repository": "https://github.com/sitoi/commitcraft",
   "icon": "images/logo.png",
   "activationEvents": [
-    "onCommand:ai-commit"
+    "onStartupFinished"
   ],
   "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "commitcraft-sidebar",
+          "title": "CommitCraft",
+          "icon": "images/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "scm": [
+        {
+          "id": "commitcraft.scmView",
+          "name": "CommitCraft AI Assistant",
+          "when": "workbenchState != empty"
+        }
+      ],
+      "commitcraft-sidebar": [
+        {
+          "id": "commitcraft.sidebarView",
+          "name": "CommitCraft Assistant"
+        }
+      ]
+    },
     "commands": [
       {
-        "command": "extension.ai-commit",
-        "icon": {
-          "dark": "images/icon.svg",
-          "light": "images/icon.svg"
-        },
-        "title": "AI Commit"
+        "command": "commitcraft.generate",
+        "icon": "$(git-commit)",
+        "title": "CommitCraft: Generate Commit Message"
       },
       {
-        "command": "ai-commit.showAvailableModels",
-        "title": "Show Available OpenAI Models"
+        "command": "commitcraft.generateCandidates",
+        "icon": "$(list-unordered)",
+        "title": "CommitCraft: Generate Multiple Options"
+      },
+      {
+        "command": "commitcraft.reviewChanges",
+        "icon": "$(shield)",
+        "title": "CommitCraft: Pre-Commit Code Review"
+      },
+      {
+        "command": "commitcraft.generatePR",
+        "icon": "$(git-pull-request)",
+        "title": "CommitCraft: Generate PR Description"
+      },
+      {
+        "command": "commitcraft.suggestBranch",
+        "icon": "$(git-branch)",
+        "title": "CommitCraft: Suggest Branch Name"
+      },
+      {
+        "command": "commitcraft.quickMenu",
+        "icon": "$(zap)",
+        "title": "CommitCraft: Quick Action Hub"
+      },
+      {
+        "command": "commitcraft.switchStyle",
+        "title": "CommitCraft: Switch Commit Style"
+      },
+      {
+        "command": "commitcraft.quickSetup",
+        "icon": "$(sparkle)",
+        "title": "CommitCraft: Quick Setup Wizard"
+      },
+      {
+        "command": "commitcraft.switchProvider",
+        "title": "CommitCraft: Switch AI Provider"
+      },
+      {
+        "command": "commitcraft.selectModel",
+        "title": "CommitCraft: Select Model"
+      },
+      {
+        "command": "commitcraft.setApiKey",
+        "title": "CommitCraft: Set API Key"
+      },
+      {
+        "command": "commitcraft.setBaseUrl",
+        "title": "CommitCraft: Set API Base URL"
+      },
+      {
+        "command": "commitcraft.switchLanguage",
+        "title": "CommitCraft: Switch Language"
+      },
+      {
+        "command": "commitcraft.toggleEmoji",
+        "title": "CommitCraft: Toggle Emojis"
+      },
+      {
+        "command": "commitcraft.openSettings",
+        "icon": "$(gear)",
+        "title": "CommitCraft: Open Settings"
+      },
+      {
+        "command": "commitcraft.showAvailableModels",
+        "title": "CommitCraft: Show Available OpenAI Models"
       }
     ],
+    "keybindings": [
+      {
+        "command": "commitcraft.generate",
+        "key": "ctrl+alt+c",
+        "mac": "cmd+alt+c"
+      }
+    ],
+    "menus": {
+      "scm/title": [
+        {
+          "command": "commitcraft.generate",
+          "group": "navigation@1"
+        },
+        {
+          "command": "commitcraft.generateCandidates",
+          "group": "navigation@2"
+        },
+        {
+          "command": "commitcraft.reviewChanges",
+          "group": "navigation@3"
+        },
+        {
+          "command": "commitcraft.generatePR",
+          "group": "navigation@4"
+        },
+        {
+          "command": "commitcraft.quickMenu",
+          "group": "navigation@5"
+        }
+      ],
+      "scm/resourceState/context": [
+        {
+          "command": "commitcraft.reviewChanges",
+          "group": "1_commitcraft"
+        },
+        {
+          "command": "commitcraft.generate",
+          "group": "1_commitcraft"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "commitcraft.reviewChanges",
+          "group": "1_commitcraft"
+        },
+        {
+          "command": "commitcraft.generate",
+          "group": "1_commitcraft"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "commitcraft.quickSetup",
+          "when": "view == commitcraft.scmView || view == commitcraft.sidebarView",
+          "group": "navigation@1"
+        },
+        {
+          "command": "commitcraft.openSettings",
+          "when": "view == commitcraft.scmView || view == commitcraft.sidebarView",
+          "group": "navigation@2"
+        }
+      ]
+    },
     "configuration": {
+      "title": "CommitCraft",
       "properties": {
-        "ai-commit.AI_COMMIT_LANGUAGE": {
-          "default": "English",
-          "description": "Commit message language",
+        "commitcraft.AI_PROVIDER": {
+          "type": "string",
+          "default": "gemini",
+          "description": "AI Provider to use (Google Gemini, VS Code LM / Copilot, OpenAI, Claude, DeepSeek, Ollama, OpenRouter, Groq, or Custom)",
           "enum": [
+            "gemini",
+            "copilot",
+            "openai",
+            "claude",
+            "deepseek",
+            "ollama",
+            "openrouter",
+            "groq",
+            "custom"
+          ],
+          "enumDescriptions": [
+            "Google Gemini (Recommended - fast & high quality)",
+            "VS Code Language Model / GitHub Copilot (Zero configuration)",
+            "OpenAI (GPT-4o, GPT-4o mini, o1, o3-mini)",
+            "Anthropic Claude (Claude 3.7 / 3.5 Sonnet & Haiku)",
+            "DeepSeek (DeepSeek V3 / R1)",
+            "Ollama (Local offline LLMs)",
+            "OpenRouter (Access 100+ models)",
+            "Groq (Ultra-fast inference)",
+            "Custom OpenAI-compatible endpoint"
+          ]
+        },
+        "commitcraft.COMMIT_STYLE": {
+          "type": "string",
+          "default": "conventional",
+          "description": "Commit message formatting style",
+          "enum": [
+            "conventional",
+            "simple",
+            "detailed"
+          ],
+          "enumDescriptions": [
+            "Conventional Commits (subject + bullet points)",
+            "Simple / One-Liner (concise single line without body)",
+            "Detailed (comprehensive changelog with why/how)"
+          ]
+        },
+        "commitcraft.AI_COMMIT_LANGUAGE": {
+          "type": "string",
+          "default": "English",
+          "description": "Language for generated commit messages and PR descriptions",
+          "enum": [
+            "Thai",
+            "English",
             "Simplified Chinese",
             "Traditional Chinese",
             "Japanese",
             "Korean",
-            "Czech",
-            "German",
-            "French",
-            "Italian",
-            "Dutch",
-            "Portuguese",
-            "Vietnamese",
-            "English",
             "Spanish",
-            "Swedish",
+            "French",
+            "German",
+            "Portuguese",
             "Russian",
+            "Vietnamese",
             "Bahasa",
+            "Italian",
             "Polish",
+            "Dutch",
             "Turkish",
-            "Thai"
+            "Swedish",
+            "Czech"
           ],
           "enumDescriptions": [
+            "ไทย",
+            "English",
             "简体中文",
             "繁體中文",
-            "にほんご",
+            "日本語",
             "한국어",
-            "česky",
+            "Español",
+            "Français",
             "Deutsch",
-            "française",
-            "italiano",
-            "Nederlands",
-            "português",
-            "tiếng Việt",
-            "english",
-            "español",
-            "Svenska",
-            "русский",
-            "bahasa",
+            "Português",
+            "Русский",
+            "Tiếng Việt",
+            "Bahasa",
+            "Italiano",
             "Polski",
-            "Turkish",
-            "ไทย"
-          ],
-          "type": "string"
+            "Nederlands",
+            "Türkçe",
+            "Svenska",
+            "Česky"
+          ]
         },
-        "ai-commit.AZURE_API_VERSION": {
-          "default": "",
-          "description": "AZURE API VERSION",
-          "type": "string"
+        "commitcraft.EMOJI_ENABLED": {
+          "type": "boolean",
+          "default": false,
+          "description": "Include Gitmoji icons in commit messages (e.g. feat(auth): add login vs ✨ feat(auth): add login)"
         },
-        "ai-commit.OPENAI_API_KEY": {
-          "default": "",
-          "description": "OpenAI API Key",
-          "type": "string"
+        "commitcraft.AUTO_STAGE": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically stage all unstaged changes when generating commit messages without confirmation"
         },
-        "ai-commit.OPENAI_BASE_URL": {
-          "default": "",
-          "description": "OpenAI BASE URL",
-          "type": "string"
+        "commitcraft.AUTO_DETECT_ISSUE": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically detect and extract Issue/Jira tickets from the active git branch name (e.g. feat/PROJ-123-login -> [PROJ-123])"
         },
-        "ai-commit.OPENAI_MODEL": {
-          "default": "gpt-4o",
-          "description": "OpenAI MODEL, you can select a model from the list by running the 'Show Available OpenAI Models' command",
-          "type": "string"
+        "commitcraft.SHOW_STATUS_BAR": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show the CommitCraft status bar button in VS Code"
         },
-        "ai-commit.AI_COMMIT_SYSTEM_PROMPT": {
+        "commitcraft.AI_COMMIT_SYSTEM_PROMPT": {
           "type": "string",
           "default": "",
-          "description": "Custom system prompt for generating commit messages"
+          "description": "Custom system prompt for commit message generation (leave blank for built-in prompt)"
         },
-        "ai-commit.OPENAI_TEMPERATURE": {
+        "commitcraft.GEMINI_API_KEY": {
+          "type": "string",
+          "default": "",
+          "description": "Google Gemini API Key"
+        },
+        "commitcraft.GEMINI_MODEL": {
+          "type": "string",
+          "default": "gemini-2.5-flash",
+          "description": "Google Gemini Model (e.g. gemini-2.5-flash, gemini-2.5-pro, gemini-2.0-flash)"
+        },
+        "commitcraft.GEMINI_TEMPERATURE": {
           "type": "number",
           "default": 0.7,
           "minimum": 0,
           "maximum": 2,
-          "description": "OpenAI temperature setting (0-2). Higher values make output more random, lower values more deterministic."
+          "description": "Gemini temperature (0-2)"
         },
-        "ai-commit.OPENAI_API_TYPE": {
+        "commitcraft.VSCODE_LM_MODEL": {
+          "type": "string",
+          "default": "copilot/gpt-4o",
+          "description": "VS Code Language Model / GitHub Copilot model family"
+        },
+        "commitcraft.OPENAI_API_KEY": {
+          "type": "string",
+          "default": "",
+          "description": "OpenAI API Key"
+        },
+        "commitcraft.OPENAI_BASE_URL": {
+          "type": "string",
+          "default": "",
+          "description": "Custom OpenAI Base URL (optional)"
+        },
+        "commitcraft.OPENAI_MODEL": {
+          "type": "string",
+          "default": "gpt-4o-mini",
+          "description": "OpenAI Model (e.g. gpt-4o-mini, gpt-4o, o3-mini)"
+        },
+        "commitcraft.OPENAI_TEMPERATURE": {
+          "type": "number",
+          "default": 0.7,
+          "minimum": 0,
+          "maximum": 2,
+          "description": "OpenAI temperature (0-2)"
+        },
+        "commitcraft.OPENAI_API_TYPE": {
           "type": "string",
           "default": "completion",
-          "description": "Choose OpenAI API: Chat Completions API or Responses API",
+          "description": "OpenAI API Type: Chat Completions or Responses API",
           "enum": ["completion", "response"],
           "enumDescriptions": [
             "Chat Completions API (default)",
             "Responses API (supports reasoning models)"
           ]
         },
-        "ai-commit.OPENAI_REASONING_EFFORT": {
+        "commitcraft.OPENAI_REASONING_EFFORT": {
           "type": "string",
           "default": "medium",
-          "description": "Reasoning effort for the Responses API (only applies when OPENAI_API_TYPE is 'response')",
-          "enum": ["minimal", "low", "medium", "high"],
-          "enumDescriptions": [
-            "Minimal reasoning effort",
-            "Low reasoning effort",
-            "Medium reasoning effort (default)",
-            "High reasoning effort"
-          ]
+          "description": "Reasoning effort for Responses API",
+          "enum": ["minimal", "low", "medium", "high"]
         },
-        "ai-commit.OPENAI_TEXT_VERBOSITY": {
+        "commitcraft.OPENAI_TEXT_VERBOSITY": {
           "type": "string",
           "default": "medium",
-          "description": "Output verbosity for the Responses API — controls max output tokens: low (~1000), medium (~4000), high (~16000)",
-          "enum": ["low", "medium", "high"],
-          "enumDescriptions": [
-            "Low verbosity (~1000 tokens)",
-            "Medium verbosity (~4000 tokens, default)",
-            "High verbosity (~16000 tokens)"
-          ]
+          "description": "Output verbosity for Responses API",
+          "enum": ["low", "medium", "high"]
         },
-        "ai-commit.AI_PROVIDER": {
-          "type": "string",
-          "default": "openai",
-          "description": "AI Provider to use (OpenAI, Gemini, or Claude)",
-          "enum": [
-            "openai",
-            "gemini",
-            "claude"
-          ]
-        },
-        "ai-commit.GEMINI_API_KEY": {
+        "commitcraft.AZURE_API_VERSION": {
           "type": "string",
           "default": "",
-          "description": "Gemini API Key"
+          "description": "Azure OpenAI API Version"
         },
-        "ai-commit.GEMINI_MODEL": {
-          "type": "string",
-          "default": "gemini-2.0-flash-001",
-          "description": "Gemini Model to use"
-        },
-        "ai-commit.GEMINI_TEMPERATURE": {
-          "type": "number",
-          "default": 0.7,
-          "minimum": 0,
-          "maximum": 2,
-          "description": "Gemini temperature setting (0-2). Controls randomness."
-        },
-        "ai-commit.CLAUDE_API_KEY": {
+        "commitcraft.CLAUDE_API_KEY": {
           "type": "string",
           "default": "",
-          "description": "Claude API Key (optional). Leave empty to use Claude CLI (authenticated via 'claude setup-token'), or provide an Anthropic API key for direct API access."
+          "description": "Anthropic Claude API Key"
         },
-        "ai-commit.CLAUDE_MODEL": {
+        "commitcraft.CLAUDE_MODEL": {
           "type": "string",
-          "default": "claude-sonnet-4-5-20250929",
-          "description": "Claude Model to use"
+          "default": "claude-3-7-sonnet-latest",
+          "description": "Claude Model (e.g. claude-3-7-sonnet-latest, claude-3-5-sonnet-latest, claude-3-5-haiku-latest)"
         },
-        "ai-commit.CLAUDE_TEMPERATURE": {
+        "commitcraft.CLAUDE_TEMPERATURE": {
           "type": "number",
           "default": 0.7,
           "minimum": 0,
           "maximum": 1,
-          "description": "Claude temperature setting (0-1). Controls randomness."
+          "description": "Claude temperature (0-1)"
+        },
+        "commitcraft.DEEPSEEK_API_KEY": {
+          "type": "string",
+          "default": "",
+          "description": "DeepSeek API Key"
+        },
+        "commitcraft.DEEPSEEK_MODEL": {
+          "type": "string",
+          "default": "deepseek-chat",
+          "description": "DeepSeek Model (deepseek-chat for V3, deepseek-reasoner for R1)"
+        },
+        "commitcraft.DEEPSEEK_TEMPERATURE": {
+          "type": "number",
+          "default": 0.7,
+          "minimum": 0,
+          "maximum": 2,
+          "description": "DeepSeek temperature (0-2)"
+        },
+        "commitcraft.OLLAMA_BASE_URL": {
+          "type": "string",
+          "default": "http://localhost:11434/v1",
+          "description": "Ollama Base URL"
+        },
+        "commitcraft.OLLAMA_MODEL": {
+          "type": "string",
+          "default": "llama3.2",
+          "description": "Ollama Model (e.g. llama3.2, qwen2.5-coder, deepseek-r1)"
+        },
+        "commitcraft.OPENROUTER_API_KEY": {
+          "type": "string",
+          "default": "",
+          "description": "OpenRouter API Key"
+        },
+        "commitcraft.OPENROUTER_MODEL": {
+          "type": "string",
+          "default": "deepseek/deepseek-chat",
+          "description": "OpenRouter Model (e.g. deepseek/deepseek-chat, anthropic/claude-3.5-sonnet)"
+        },
+        "commitcraft.GROQ_API_KEY": {
+          "type": "string",
+          "default": "",
+          "description": "Groq API Key"
+        },
+        "commitcraft.GROQ_MODEL": {
+          "type": "string",
+          "default": "llama-3.3-70b-versatile",
+          "description": "Groq Model (e.g. llama-3.3-70b-versatile, llama-3.1-8b-instant)"
+        },
+        "commitcraft.CUSTOM_BASE_URL": {
+          "type": "string",
+          "default": "http://localhost:8000/v1",
+          "description": "Custom OpenAI-compatible Base URL"
+        },
+        "commitcraft.CUSTOM_API_KEY": {
+          "type": "string",
+          "default": "",
+          "description": "Custom OpenAI-compatible API Key"
+        },
+        "commitcraft.CUSTOM_MODEL": {
+          "type": "string",
+          "default": "default",
+          "description": "Custom OpenAI-compatible Model name"
         }
-      },
-      "title": "AI Commit"
-    },
-    "menus": {
-      "scm/title": [
-        {
-          "command": "extension.ai-commit",
-          "group": "navigation"
-        }
-      ]
+      }
     }
   },
   "main": "./dist/extension.js",
@@ -222,7 +473,7 @@
     "build": "webpack --mode production --devtool hidden-source-map",
     "compile": "webpack",
     "compile-tests": "tsc -p . --outDir out",
-    "lint": "eslint src --ext ts",
+    "lint": "eslint src",
     "package": "vsce package --no-dependencies",
     "pretest": "npm run compile-tests && npm run compile && npm run lint",
     "publish": "vsce publish --no-dependencies",

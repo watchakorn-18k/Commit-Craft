@@ -4,22 +4,17 @@ import { Logger } from './logger';
 
 /**
  * Sends a chat completion request to Claude using the Anthropic API.
- * @param {Array<Object>} messages - The messages to send to Claude.
- * @returns {Promise<string>} - A promise that resolves to the API response.
  */
-export async function ClaudeAPI(messages: any[]): Promise<string> {
+export async function ClaudeAPI(messages: Array<{ role: string; content: string }>): Promise<string> {
   try {
     const configManager = ConfigurationManager.getInstance();
-    const apiKey = configManager.getConfig<string>(ConfigKeys.CLAUDE_API_KEY, '');
+    const apiKey = await configManager.getEffectiveApiKey('claude');
 
     if (!apiKey || apiKey.trim() === '') {
-      throw new Error('Claude API Key not configured');
+      throw new Error('Claude API Key is not configured.');
     }
 
-    const model = configManager.getConfig<string>(
-      ConfigKeys.CLAUDE_MODEL,
-      'claude-sonnet-4-5'
-    );
+    const model = configManager.getActiveModel('claude');
     const temperature = configManager.getConfig<number>(
       ConfigKeys.CLAUDE_TEMPERATURE,
       0.7
@@ -31,9 +26,11 @@ export async function ClaudeAPI(messages: any[]): Promise<string> {
     const conversationMessages = messages
       .filter((msg) => msg.role !== 'system')
       .map((msg) => ({
-        role: msg.role as 'user' | 'assistant',
+        role: (msg.role === 'assistant' ? 'assistant' : 'user') as 'user' | 'assistant',
         content: msg.content
       }));
+
+    Logger.info(`Sending request to Claude using model: ${model}`);
 
     const response = await anthropic.messages.create({
       model,

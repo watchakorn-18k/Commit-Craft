@@ -1,145 +1,138 @@
-<a name="readme-top"></a>
+# CommitCraft (v0.1.0)
 
 <div align="center">
-
-<img height="120" src="https://github.com/Sitoi/ai-commit/blob/main/images/logo.png?raw=true">
-
-<h1>AI Commit</h1>
-
-Use OpenAI / Azure OpenAI / DeepSeek / Grok / Gemini / Claude (Anthropic) API to review Git changes, generate conventional commit messages that meet the conventions, simplify the commit process, and keep the commit conventions consistent.
-
-**English** · [简体中文](./README.zh_CN.md) · [Report Bug][github-issues-link] · [Request Feature][github-issues-link]
-
-<!-- SHIELD GROUP -->
-
-[![][github-contributors-shield]][github-contributors-link]
-[![][github-forks-shield]][github-forks-link]
-[![][github-stars-shield]][github-stars-link]
-[![][github-issues-shield]][github-issues-link]
-[![][vscode-marketplace-shield]][vscode-marketplace-link]
-[![][total-installs-shield]][total-installs-link]
-[![][avarage-rating-shield]][avarage-rating-link]
-[![][github-license-shield]][github-license-link]
-
-![](https://github.com/sitoi/ai-commit/blob/main/aicommit.gif?raw=true)
-
+  <img src="./images/logo.png" alt="CommitCraft Logo" width="128" />
+  <p><strong>The Intelligent, GUI-First Git AI Assistant for VS Code</strong></p>
 </div>
 
-## ✨ Features
+CommitCraft generates conventional commit messages, runs pre-commit code reviews, drafts Pull Request descriptions, and suggests Git branch names powered by **Google Gemini**, **GitHub Copilot / VS Code LM**, **OpenAI**, **Anthropic Claude**, **DeepSeek**, **Ollama (Local)**, **OpenRouter**, and **Groq**.
 
-- 🤯 Support generating commit messages based on git diffs using OpenAI / Azure OpenAI / DeepSeek / Grok / Gemini / Claude (Anthropic) API.
-- 🧠 Support OpenAI Responses API with configurable reasoning effort and output verbosity.
-- 🗺️ Support multi-language commit messages.
-- 😜 Support adding Gitmoji.
-- 🛠️ Support custom system prompt.
-- 📝 Support Conventional Commits specification.
-
-## 📦 Installation
-
-1. Search for "AI Commit" in VSCode and click the "Install" button.
-2. Install it directly from the [Visual Studio Code Marketplace](https://marketplace.visualstudio.com/items?itemName=Sitoi.ai-commit).
-
-> **Note**\
-> Make sure your node version >= 16
-
-## 🤯 Usage
-
-1. Ensure that you have installed and enabled the "AI Commit" extension.
-2. In VSCode settings, locate the "ai-commit" configuration options and configure them as needed.
-3. Make changes in your project and add the changes to the staging area (git add).
-4. (Optional) If you want to provide additional context for the commit message, type it in the Source Control panel's message input box before clicking the AI Commit button.
-5. Next to the commit message input box in the "Source Control" panel, click the "AI Commit" icon button. After clicking, the extension will generate a commit message (considering any additional context if provided) and populate it in the input box.
-6. Review the generated commit message, and if you are satisfied, proceed to commit your changes.
-
-> **Note**\
-> If the code exceeds the maximum token length, consider adding it to the staging area in batches.
-
-### ⚙️ Configuration
-
-> **Note** Version >= 0.0.5 Don't need to configure `EMOJI_ENABLED` and `FULL_GITMOJI_SPEC`, Default Prompt is [prompt/with_gitmoji.md](./prompt/with_gitmoji.md), If don't need to use `Gitmoji`. Please set `SYSTEM_PROMPT` to your custom prompt, please refer to [prompt/without_gitmoji.md](./prompt/without_gitmoji.md).
-
-In the VSCode settings, locate the "ai-commit" configuration options and configure them as needed:
-
-| Configuration           |  Type  |          Default           | Required |                                                               Notes                                                                |
-| :---------------------- | :----: | :------------------------: | :------: | :--------------------------------------------------------------------------------------------------------------------------------: |
-| AI_PROVIDER             | string |           openai           |   Yes    |                                        AI Provider to use: `openai`, `gemini`, or `claude`                                         |
-| OPENAI_API_KEY          | string |            None            |   Yes    |               Required when `AI_PROVIDER` is `openai`. [OpenAI token](https://platform.openai.com/account/api-keys)                |
-| OPENAI_BASE_URL         | string |            None            |    No    |                       If using Azure, use: `https://{resource}.openai.azure.com/openai/deployments/{model}`                        |
-| OPENAI_MODEL            | string |           gpt-4o           |   Yes    |                     OpenAI model. Run the `Show Available OpenAI Models` command to pick from available models                     |
-| AZURE_API_VERSION       | string |            None            |    No    |                                                      Azure API version string                                                      |
-| OPENAI_TEMPERATURE      | number |            0.7             |    No    |               Controls randomness. Range: 0–2. Lower = more focused, Higher = more creative. (Chat Completions only)               |
-| OPENAI_API_TYPE         | string |         completion         |    No    |                             Choose API: `completion` (Chat Completions) or `response` (Responses API)                              |
-| OPENAI_REASONING_EFFORT | string |           medium           |    No    |     Reasoning effort for Responses API: `minimal`, `low`, `medium`, `high`. Only applies when `OPENAI_API_TYPE` is `response`      |
-| OPENAI_TEXT_VERBOSITY   | string |           medium           |    No    |             Output verbosity for Responses API: `low` (~1000 tokens), `medium` (~4000 tokens), `high` (~16000 tokens)              |
-| GEMINI_API_KEY          | string |            None            |   Yes    |                Required when `AI_PROVIDER` is `gemini`. [Gemini API key](https://makersuite.google.com/app/apikey)                 |
-| GEMINI_MODEL            | string |    gemini-2.0-flash-001    |   Yes    |                                                        Gemini model to use                                                         |
-| GEMINI_TEMPERATURE      | number |            0.7             |    No    |                           Controls randomness. Range: 0–2. Lower = more focused, Higher = more creative                            |
-| CLAUDE_API_KEY          | string |            None            |    No    | Anthropic API key. Leave empty to use Claude CLI (authenticated via `claude setup-token`). Required when `AI_PROVIDER` is `claude` |
-| CLAUDE_MODEL            | string | claude-sonnet-4-5-20250929 |    No    |                                                        Claude model to use                                                         |
-| CLAUDE_TEMPERATURE      | number |            0.7             |    No    |                                                  Controls randomness. Range: 0–1                                                   |
-| AI_COMMIT_LANGUAGE      | string |          English           |   Yes    |                                                       Supports 19 languages                                                        |
-| SYSTEM_PROMPT           | string |            None            |    No    |                                                        Custom system prompt                                                        |
-
-## ⌨️ Local Development
-
-You can use Github Codespaces for online development:
-
-[![][github-codespace-shield]][github-codespace-link]
-
-Alternatively, you can clone the repository and run the following commands for local development:
-
-```bash
-$ git clone https://github.com/sitoi/ai-commit.git
-$ cd ai-commit
-$ npm install
-```
-
-Open the project folder in VSCode. Press F5 to run the project. This will open a new Extension Development Host window and launch the plugin within it.
-
-## 🤝 Contributing
-
-Contributions of all types are more than welcome, if you are interested in contributing code, feel free to check out our GitHub [Issues][github-issues-link] to get stuck in to show us what you’re made of.
-
-[![][pr-welcome-shield]][pr-welcome-link]
-
-### 💗 All Thanks To Our Contributors
-
-[![][github-contrib-shield]][github-contrib-link]
-
-## 🔗 Links
-
-### Credits
-
-- **auto-commit** - <https://github.com/lynxife/auto-commit>
-- **opencommit** - <https://github.com/di-sukharev/opencommit>
+Built for maximum ease-of-use with a dedicated Sidebar, Source Control toolbar buttons, Status Bar action hub, and settings reactivity — without requiring you to use the Command Palette or memorise keybindings.
 
 ---
 
-## 📝 License
+## Key Features
 
-This project is [MIT](./LICENSE) licensed.
+### 1. GUI-First Experience (No Command Palette Required)
+- **Source Control (SCM) Action Bar**: 1-click action buttons positioned directly above your commit input box.
+- **Dedicated Sidebar & SCM TreeView**: Access all actions, switch AI providers, change models, and adjust settings with a single click.
+- **Status Bar Action Hub**: Click `$(git-commit) CommitCraft` in the bottom status bar for an instant popup menu.
+- **Context Menus**: Right-click on files in Git SCM or in the active editor to review code or generate commits.
 
-<!-- LINK GROUP -->
+### 2. Standard Conventional Commits
+- Generates clean, technical commit messages (`feat(scope): subject`) adhering to Conventional Commits standards.
+- Zero decorative fluff, zero robotic filler text.
+- Ticket & issue auto-detection: automatically identifies Jira or GitHub ticket tags from branch names (e.g. `feat/PROJ-123-auth` &rarr; `[PROJ-123] feat(auth): ...`).
 
-[github-codespace-link]: https://codespaces.new/sitoi/ai-commit
-[github-codespace-shield]: https://github.com/sitoi/ai-commit/blob/main/images/codespaces.png?raw=true
-[github-contributors-link]: https://github.com/sitoi/ai-commit/graphs/contributors
-[github-contributors-shield]: https://img.shields.io/github/contributors/sitoi/ai-commit?color=c4f042&labelColor=black&style=flat-square
-[github-forks-link]: https://github.com/sitoi/ai-commit/network/members
-[github-forks-shield]: https://img.shields.io/github/forks/sitoi/ai-commit?color=8ae8ff&labelColor=black&style=flat-square
-[github-issues-link]: https://github.com/sitoi/ai-commit/issues
-[github-issues-shield]: https://img.shields.io/github/issues/sitoi/ai-commit?color=ff80eb&labelColor=black&style=flat-square
-[github-license-link]: https://github.com/sitoi/ai-commit/blob/main/LICENSE
-[github-license-shield]: https://img.shields.io/github/license/sitoi/ai-commit?color=white&labelColor=black&style=flat-square
-[github-stars-link]: https://github.com/sitoi/ai-commit/network/stargazers
-[github-stars-shield]: https://img.shields.io/github/stars/sitoi/ai-commit?color=ffcb47&labelColor=black&style=flat-square
-[pr-welcome-link]: https://github.com/sitoi/ai-commit/pulls
-[pr-welcome-shield]: https://img.shields.io/badge/🤯_pr_welcome-%E2%86%92-ffcb47?labelColor=black&style=for-the-badge
-[github-contrib-link]: https://github.com/sitoi/ai-commit/graphs/contributors
-[github-contrib-shield]: https://contrib.rocks/image?repo=sitoi%2Fai-commit
-[vscode-marketplace-link]: https://marketplace.visualstudio.com/items?itemName=Sitoi.ai-commit
-[vscode-marketplace-shield]: https://img.shields.io/vscode-marketplace/v/Sitoi.ai-commit.svg?label=vscode%20marketplace&color=blue&labelColor=black&style=flat-square
-[total-installs-link]: https://marketplace.visualstudio.com/items?itemName=Sitoi.ai-commit
-[total-installs-shield]: https://img.shields.io/vscode-marketplace/d/Sitoi.ai-commit.svg?&color=greeen&labelColor=black&style=flat-square
-[avarage-rating-link]: https://marketplace.visualstudio.com/items?itemName=Sitoi.ai-commit
-[avarage-rating-shield]: https://img.shields.io/vscode-marketplace/r/Sitoi.ai-commit.svg?&color=green&labelColor=black&style=flat-square
+### 3. Multiple Candidate Options
+- Generate 3 distinct options in parallel:
+  - **Conventional**: Balanced subject with concise technical bullet points.
+  - **Concise**: Single-line summary without body.
+  - **Detailed**: Comprehensive breakdown with rationale and context.
+
+### 4. Pre-Commit Code Review & Security Audit
+- Audits staged diffs beside your editor before committing:
+  - Detects potential runtime bugs, null/undefined hazards, and unhandled rejections.
+  - Flags leaked API keys, tokens, and hardcoded secrets.
+  - Identifies leftover debug statements (`console.log`, `debugger`, print statements).
+
+### 5. Pull Request & Branch Name Generators
+- **PR Descriptions**: Summarizes branch history and diffs into structured Markdown (Overview, Changes, Testing, Checklist) with 1-click clipboard copy.
+- **Branch Suggester**: Proposes standard branch names (`feat/...`, `fix/...`, `refactor/...`) based on unstaged or staged changes.
+
+### 6. Multi-Provider & Local LLM Support
+- **Google Gemini**: `gemini-2.5-flash` (recommended default), `gemini-2.5-pro`, `gemini-2.0-flash`.
+- **GitHub Copilot / VS Code LM**: Zero-configuration built-in language models without external API keys.
+- **OpenAI**: `gpt-4o-mini`, `gpt-4o`, `o3-mini`, `o1`.
+- **Anthropic Claude**: `claude-3-7-sonnet-latest`, `claude-3-5-sonnet-latest`, `claude-3-5-haiku-latest`.
+- **DeepSeek**: `deepseek-chat` (V3), `deepseek-reasoner` (R1).
+- **Ollama (Local)**: `llama3.2`, `qwen2.5-coder`, `deepseek-r1` (100% offline & free).
+- **OpenRouter & Groq**: High-speed inference and access to 100+ open-source models.
+- **Custom Endpoints**: Compatible with vLLM, LM Studio, LocalAI, Azure OpenAI, and custom proxies.
+
+---
+
+## How to Use
+
+### Method 1: Using the GUI (Recommended)
+1. Stage your changes in Git (`git add`).
+2. Click the **CommitCraft** icon `$(git-commit)` on the Source Control title bar or in the **CommitCraft Assistant** sidebar panel.
+3. The commit message is generated and inserted into the commit message box automatically.
+
+### Method 2: Status Bar
+- Click **`$(git-commit) CommitCraft`** at the bottom left of VS Code to open the **Quick Action Hub**.
+
+### Method 3: Keyboard Shortcut
+- Press **`Cmd + Alt + C`** (macOS) or **`Ctrl + Alt + C`** (Windows/Linux).
+
+---
+
+## Commands
+
+All commands can be accessed via GUI buttons, the Status Bar hub, or Command Palette (`Cmd+Shift+P` / `Ctrl+Shift+P`):
+
+| Command | Description |
+| :--- | :--- |
+| `CommitCraft: Generate Commit Message` | Analyze staged changes and generate commit message |
+| `CommitCraft: Generate Multiple Options` | Generate 3 format choices (Conventional, Concise, Detailed) |
+| `CommitCraft: Pre-Commit Code Review` | Audit staged changes for bugs and security risks |
+| `CommitCraft: Generate PR Description` | Generate PR description from branch history |
+| `CommitCraft: Suggest Branch Name` | Suggest Git branch names based on diff |
+| `CommitCraft: Quick Action Hub` | Open 1-click action popup menu |
+| `CommitCraft: Quick Setup Wizard` | Step-by-step provider and model setup |
+| `CommitCraft: Switch AI Provider` | Switch active provider (Gemini, Copilot, OpenAI, Claude, DeepSeek, Ollama, etc.) |
+| `CommitCraft: Select Model` | Select model preset or specify custom model identifier |
+| `CommitCraft: Set API Key` | Update provider API key securely |
+| `CommitCraft: Set API Base URL` | Set endpoint base URL (for Ollama, vLLM, Custom) |
+| `CommitCraft: Switch Language` | Set commit message language (Thai, English, Japanese, etc.) |
+| `CommitCraft: Switch Commit Style` | Change formatting style (Conventional / Simple / Detailed) |
+| `CommitCraft: Toggle Emojis` | Toggle Gitmoji inclusion on or off (disabled by default) |
+| `CommitCraft: Open Settings` | Open VS Code Settings UI for CommitCraft |
+
+---
+
+## Configuration
+
+Settings can be managed visually in the **Settings UI** (`Cmd+,` &rarr; search `CommitCraft`) or defined in `.vscode/settings.json` / User `settings.json`:
+
+```json
+{
+  "commitcraft.AI_PROVIDER": "gemini",
+  "commitcraft.GEMINI_API_KEY": "AIzaSy...",
+  "commitcraft.GEMINI_MODEL": "gemini-2.5-flash",
+  "commitcraft.AI_COMMIT_LANGUAGE": "Thai",
+  "commitcraft.COMMIT_STYLE": "conventional",
+  "commitcraft.EMOJI_ENABLED": false,
+  "commitcraft.AUTO_STAGE": false,
+  "commitcraft.AUTO_DETECT_ISSUE": true,
+  "commitcraft.SHOW_STATUS_BAR": true
+}
+```
+
+### Configuration Options
+
+| Setting | Default | Description |
+| :--- | :--- | :--- |
+| `commitcraft.AI_PROVIDER` | `"gemini"` | `gemini`, `copilot`, `openai`, `claude`, `deepseek`, `ollama`, `openrouter`, `groq`, `custom` |
+| `commitcraft.COMMIT_STYLE` | `"conventional"` | Commit format: `conventional`, `simple`, `detailed` |
+| `commitcraft.AI_COMMIT_LANGUAGE` | `"English"` | Language for commit & PR messages (`Thai`, `English`, `Simplified Chinese`, etc.) |
+| `commitcraft.EMOJI_ENABLED` | `false` | Enable or disable Gitmoji in commit subjects |
+| `commitcraft.AUTO_STAGE` | `false` | Automatically stage all modified files when generating |
+| `commitcraft.AUTO_DETECT_ISSUE` | `true` | Extract Jira/GitHub issue tags from branch names |
+| `commitcraft.SHOW_STATUS_BAR` | `true` | Display status bar button |
+| `commitcraft.AI_COMMIT_SYSTEM_PROMPT` | `""` | Optional custom system prompt |
+
+---
+
+## Extension Installation
+
+To install manually from the VSIX package:
+```bash
+code --install-extension commitcraft-0.1.0.vsix
+```
+
+---
+
+## License
+
+[MIT](./LICENSE)

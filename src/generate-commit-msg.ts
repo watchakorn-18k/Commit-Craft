@@ -1,197 +1,284 @@
-import * as fs from 'fs-extra';
-import { ChatCompletionMessageParam } from 'openai/resources';
 import * as vscode from 'vscode';
+import { AIService } from './ai-service';
 import { ConfigKeys, ConfigurationManager } from './config';
-import { getDiffStaged } from './git-utils';
-import { ChatGPTAPI, ResponsesAPI } from './openai-utils';
-import { getMainCommitPrompt } from './prompts';
+import {
+  extractIssueFromBranch,
+  getCurrentBranch,
+  getDiffStaged,
+  getRepo,
+  hasUnstagedChanges,
+  stageAllChanges
+} from './git-utils';
+import { getMainCommitPrompt, getMultipleCandidatesPrompt } from './prompts';
 import { ProgressHandler } from './utils';
-import { GeminiAPI } from './gemini-utils';
-import { ClaudeAPI } from './claude-utils';
 import { Logger } from './logger';
 
 /**
- * Generates a chat completion prompt for the commit message based on the provided diff.
- *
- * @param {string} diff - The diff string representing changes to be committed.
- * @param {string} additionalContext - Additional context for the changes.
- * @returns {Promise<Array<{ role: string, content: string }>>} - A promise that resolves to an array of messages for the chat completion.
+ * Clean up raw AI output into a clean commit message
  */
-const generateCommitMessageChatCompletionPrompt = async (
-  diff: string,
-  additionalContext?: string
-) => {
-  const INIT_MESSAGES_PROMPT = await getMainCommitPrompt();
-  const chatContextAsCompletionRequest = [...INIT_MESSAGES_PROMPT];
+function cleanCommitMessage(raw: string): string {
+  let cleaned = raw;
 
-  if (additionalContext) {
-    chatContextAsCompletionRequest.push({
-      role: 'user',
-      content: `Additional context for the changes:\n${additionalContext}`
-    });
+  // 1. Remove thinking / reasoning tags (DeepSeek R1, OpenAI reasoning, etc.)
+  cleaned = cleaned.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+
+  // 2. Remove markdown code blocks if AI wrapped output in ``` or ```git
+  if (cleaned.startsWith('```')) {
+    cleaned = cleaned.replace(/^```[a-zA-Z]*\n?/, '').replace(/\n?```$/, '').trim();
   }
 
-  chatContextAsCompletionRequest.push({
-    role: 'user',
-    content: diff
-  });
-  return chatContextAsCompletionRequest;
-};
-
-/**
- * Retrieves the repository associated with the provided argument.
- *
- * @param {any} arg - The input argument containing the root URI of the repository.
- * @returns {Promise<vscode.SourceControlRepository>} - A promise that resolves to the repository object.
- */
-export async function getRepo(arg) {
-  const gitApi = vscode.extensions.getExtension('vscode.git')?.exports.getAPI(1);
-  if (!gitApi) {
-    throw new Error('Git extension not found');
+  // 3. Remove leading quotes if wrapped in quotes
+  if ((cleaned.startsWith('"') && cleaned.endsWith('"')) || (cleaned.startsWith('\'') && cleaned.endsWith('\''))) {
+    cleaned = cleaned.slice(1, -1).trim();
   }
 
-  if (typeof arg === 'object' && arg.rootUri) {
-    const resourceUri = arg.rootUri;
-    const realResourcePath: string = fs.realpathSync(resourceUri!.fsPath);
-    for (let i = 0; i < gitApi.repositories.length; i++) {
-      const repo = gitApi.repositories[i];
-      if (realResourcePath.startsWith(repo.rootUri.fsPath)) {
-        return repo;
-      }
-    }
-  }
-  return gitApi.repositories[0];
+  return cleaned.trim();
 }
 
 /**
- * Generates a commit message based on the changes staged in the repository.
- *
- * @param {any} arg - The input argument containing the root URI of the repository.
- * @returns {Promise<void>} - A promise that resolves when the commit message has been generated and set in the SCM input box.
+ * Ensure repo has staged changes, prompting user if necessary
  */
-export async function generateCommitMsg(arg) {
-  return ProgressHandler.withProgress('', async (progress) => {
-    try {
-      const configManager = ConfigurationManager.getInstance();
-      const repo = await getRepo(arg);
+async function prepareDiff(repo: any): Promise<string | null> {
+  const configManager = ConfigurationManager.getInstance();
+  let diffResult = await getDiffStaged(repo);
+  let diff = diffResult.diff;
 
-      const aiProvider = configManager.getConfig<string>(
-        ConfigKeys.AI_PROVIDER,
-        'openai'
-      );
-      Logger.info(`Using AI provider: ${aiProvider}`);
+  if (!diff || diff === 'No changes staged.') {
+    const hasChanges = await hasUnstagedChanges(repo);
+    if (hasChanges) {
+      const autoStage = configManager.getConfig<boolean>(ConfigKeys.AUTO_STAGE, false);
+      let shouldStage = autoStage;
 
-      progress.report({ message: 'Getting staged changes...' });
-      const { diff, error } = await getDiffStaged(repo);
+      if (!shouldStage) {
+        const choice = await vscode.window.showInformationMessage(
+          'No staged changes found. Would you like to stage all changes and generate a commit message?',
+          'Stage All & Generate',
+          'Always Stage Automatically',
+          'Cancel'
+        );
 
-      if (error) {
-        throw new Error(`Failed to get staged changes: ${error}`);
+        if (choice === 'Always Stage Automatically') {
+          await configManager.updateConfig(ConfigKeys.AUTO_STAGE, true);
+          shouldStage = true;
+        } else if (choice === 'Stage All & Generate') {
+          shouldStage = true;
+        }
       }
 
-      if (!diff || diff === 'No changes staged.') {
-        throw new Error('No changes staged for commit');
+      if (shouldStage) {
+        await stageAllChanges(repo);
+        diffResult = await getDiffStaged(repo);
+        diff = diffResult.diff;
+      } else {
+        return null;
       }
+    } else {
+      vscode.window.showInformationMessage('No git changes detected in this repository.');
+      return null;
+    }
+  }
 
-      const scmInputBox = repo.inputBox;
-      if (!scmInputBox) {
-        throw new Error('Unable to find the SCM input box');
-      }
+  return diff;
+}
 
-      const additionalContext = scmInputBox.value.trim();
+/**
+ * Generates a single commit message and sets it in the SCM input box.
+ */
+export async function generateCommitMsg(arg?: any): Promise<void> {
+  const configManager = ConfigurationManager.getInstance();
+  const provider = configManager.getActiveProvider();
 
-      progress.report({
-        message: additionalContext
-          ? 'Analyzing changes with additional context...'
-          : 'Analyzing changes...'
-      });
-      const messages = await generateCommitMessageChatCompletionPrompt(
-        diff,
-        additionalContext
-      );
+  // Validate API key if required
+  const apiKey = await configManager.getEffectiveApiKey(provider.id);
+  if (!apiKey && provider.requiresApiKey) {
+    const choice = await vscode.window.showWarningMessage(
+      `API Key for ${provider.name} is not configured.`,
+      'Quick Setup Wizard',
+      'Enter API Key',
+      'Open Settings'
+    );
 
-      progress.report({
-        message: additionalContext
-          ? 'Generating commit message with additional context...'
-          : 'Generating commit message...'
-      });
+    if (choice === 'Quick Setup Wizard') {
+      await vscode.commands.executeCommand('ai-commit.quickSetup');
+    } else if (choice === 'Enter API Key') {
+      await vscode.commands.executeCommand('ai-commit.setApiKey', provider.id);
+    } else if (choice === 'Open Settings') {
+      await vscode.commands.executeCommand('workbench.action.openSettings', 'ai-commit');
+    }
+    return;
+  }
+
+  let repo: any;
+  try {
+    repo = await getRepo(arg);
+  } catch (err: any) {
+    vscode.window.showErrorMessage(err?.message || 'No Git repository found.');
+    return;
+  }
+
+  const scmInputBox = repo.inputBox;
+  if (!scmInputBox) {
+    vscode.window.showErrorMessage('Unable to locate the Git SCM input box.');
+    return;
+  }
+
+  const diff = await prepareDiff(repo);
+  if (!diff) {
+    return;
+  }
+
+  // Check Issue/Ticket auto-detection
+  let issueTag: string | null = null;
+  const autoDetectIssue = configManager.getConfig<boolean>(ConfigKeys.AUTO_DETECT_ISSUE, true);
+  if (autoDetectIssue) {
+    const branchName = await getCurrentBranch(repo);
+    issueTag = extractIssueFromBranch(branchName);
+  }
+
+  const additionalContext = scmInputBox.value.trim();
+
+  return ProgressHandler.withProgress(
+    `Generating commit message (${provider.name})...`,
+    async (progress) => {
       try {
-        let commitMessage: string | undefined;
+        progress.report({ message: 'Analyzing git diff...' });
 
-        if (aiProvider === 'gemini') {
-          const geminiApiKey = configManager.getConfig<string>(
-            ConfigKeys.GEMINI_API_KEY
-          );
-          if (!geminiApiKey) {
-            throw new Error('Gemini API Key not configured');
-          }
-          commitMessage = await GeminiAPI(messages);
-        } else if (aiProvider === 'claude') {
-          const claudeApiKey = configManager.getConfig<string>(
-            ConfigKeys.CLAUDE_API_KEY
-          );
-          if (!claudeApiKey) {
-            throw new Error('Claude API Key not configured');
-          }
-          commitMessage = await ClaudeAPI(messages);
-        } else {
-          const openaiApiKey = configManager.getConfig<string>(
-            ConfigKeys.OPENAI_API_KEY
-          );
-          if (!openaiApiKey) {
-            throw new Error('OpenAI API Key not configured');
-          }
-          const apiType = configManager.getConfig<string>(
-            ConfigKeys.OPENAI_API_TYPE,
-            'completion'
-          );
-          if (apiType === 'response') {
-            commitMessage = await ResponsesAPI(
-              messages as ChatCompletionMessageParam[]
-            );
-          } else {
-            commitMessage = await ChatGPTAPI(messages as ChatCompletionMessageParam[]);
-          }
+        const sysPrompt = await getMainCommitPrompt({ issueTag });
+        const messages = [...sysPrompt];
+
+        if (additionalContext) {
+          messages.push({
+            role: 'user',
+            content: `User note / context:\n${additionalContext}`
+          });
         }
 
-        if (commitMessage) {
-          // 清理 think 标签内容
-          commitMessage = commitMessage.replace(/<think>.*?<\/think>/gs, '').trim();
-          Logger.info('Commit message generated successfully');
-          scmInputBox.value = commitMessage;
+        messages.push({
+          role: 'user',
+          content: `Git Diff to analyze:\n\n${diff}`
+        });
+
+        progress.report({ message: `Generating commit with ${provider.name}...` });
+        const raw = await AIService.query(messages);
+
+        if (raw) {
+          const finalMsg = cleanCommitMessage(raw);
+          scmInputBox.value = finalMsg;
+          Logger.info('Generated commit message:\n', finalMsg);
         } else {
-          throw new Error('Failed to generate commit message');
+          throw new Error('AI returned an empty response.');
         }
       } catch (err: any) {
-        Logger.error(`${aiProvider} API call failed:`, err);
-        let errorMessage =
-          (err instanceof Error && err.message) ||
-          (typeof err === 'string' ? err : 'An unexpected error occurred');
+        Logger.error(`${provider.name} request failed:`, err);
+        const errorMsg = err?.message || String(err);
 
-        if (aiProvider === 'openai' && err?.response?.status) {
-          switch (err.response.status) {
-            case 401:
-              errorMessage = 'Invalid OpenAI API key or unauthorized access';
-              break;
-            case 429:
-              errorMessage = 'Rate limit exceeded. Please try again later';
-              break;
-            case 500:
-              errorMessage = 'OpenAI server error. Please try again later';
-              break;
-            case 503:
-              errorMessage = 'OpenAI service is temporarily unavailable';
-              break;
+        const retryChoice = await vscode.window.showErrorMessage(
+          `CommitCraft failed: ${errorMsg}`,
+          'Retry',
+          'Quick Setup',
+          'Settings'
+        );
+
+        if (retryChoice === 'Retry') {
+          return generateCommitMsg(arg);
+        } else if (retryChoice === 'Quick Setup') {
+          await vscode.commands.executeCommand('commitcraft.quickSetup');
+        } else if (retryChoice === 'Settings') {
+          await vscode.commands.executeCommand('workbench.action.openSettings', 'commitcraft');
+        }
+      }
+    }
+  );
+}
+
+/**
+ * Generates 3 candidate commit messages and lets user pick their preferred style.
+ */
+export async function generateMultipleCandidates(arg?: any): Promise<void> {
+  const configManager = ConfigurationManager.getInstance();
+  const provider = configManager.getActiveProvider();
+
+  let repo: any;
+  try {
+    repo = await getRepo(arg);
+  } catch (err: any) {
+    vscode.window.showErrorMessage(err?.message || 'No Git repository found.');
+    return;
+  }
+
+  const scmInputBox = repo.inputBox;
+  if (!scmInputBox) {
+    vscode.window.showErrorMessage('Unable to locate the Git SCM input box.');
+    return;
+  }
+
+  const diff = await prepareDiff(repo);
+  if (!diff) {
+    return;
+  }
+
+  let issueTag: string | null = null;
+  const autoDetectIssue = configManager.getConfig<boolean>(ConfigKeys.AUTO_DETECT_ISSUE, true);
+  if (autoDetectIssue) {
+    const branchName = await getCurrentBranch(repo);
+    issueTag = extractIssueFromBranch(branchName);
+  }
+
+  const language = configManager.getConfig<string>(ConfigKeys.AI_COMMIT_LANGUAGE, 'English');
+  const emojiEnabled = configManager.getConfig<boolean>(ConfigKeys.EMOJI_ENABLED, true);
+
+  return ProgressHandler.withProgress(
+    `Generating 3 Commit Candidates (${provider.name})...`,
+    async (progress) => {
+      try {
+        progress.report({ message: 'Generating candidate options...' });
+        const messages = getMultipleCandidatesPrompt(diff, {
+          language,
+          emojiEnabled,
+          issueTag
+        });
+
+        const raw = await AIService.query(messages);
+        let candidates: Array<{ style: string; message: string }> = [];
+
+        try {
+          const jsonMatch = raw.match(/\[[\s\S]*\]/);
+          if (jsonMatch) {
+            candidates = JSON.parse(jsonMatch[0]);
           }
-        } else if (aiProvider === 'gemini') {
-          errorMessage = `Gemini API error: ${err.message}`;
-        } else if (aiProvider === 'claude') {
-          errorMessage = `Claude API error: ${err.message}`;
+        } catch {
+          // Fallback parsing
         }
 
-        throw new Error(errorMessage);
+        if (candidates.length === 0) {
+          const fallback = cleanCommitMessage(raw);
+          scmInputBox.value = fallback;
+          return;
+        }
+
+        const items = candidates.map((c) => {
+          const firstLine = c.message.split('\n')[0];
+          return {
+            label: c.style,
+            description: firstLine,
+            detail: c.message,
+            fullMessage: cleanCommitMessage(c.message)
+          };
+        });
+
+        const selected = await vscode.window.showQuickPick(items, {
+          title: 'Choose Commit Message Candidate',
+          placeHolder: 'Select a candidate to populate into Git commit box',
+          matchOnDetail: true
+        });
+
+        if (selected) {
+          scmInputBox.value = selected.fullMessage;
+        }
+      } catch (err: any) {
+        Logger.error('Generate multiple candidates failed:', err);
+        vscode.window.showErrorMessage(`Failed to generate candidates: ${err?.message || err}`);
       }
-    } catch (error) {
-      throw error;
     }
-  });
+  );
 }

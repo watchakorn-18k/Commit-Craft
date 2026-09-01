@@ -1,56 +1,611 @@
 import * as vscode from 'vscode';
-import { generateCommitMsg } from './generate-commit-msg';
-import { ConfigurationManager } from './config';
+import { generateCommitMsg, generateMultipleCandidates } from './generate-commit-msg';
+import { reviewStagedChanges } from './review-utils';
+import { generatePRDescription } from './pr-utils';
+import { suggestBranchName } from './branch-utils';
+import {
+  ConfigKeys,
+  ConfigurationManager,
+  PROVIDERS,
+  SUPPORTED_LANGUAGES,
+  COMMIT_STYLES
+} from './config';
+import { fetchAvailableOpenAIModels } from './openai-utils';
+import { getVSCodeLMModels, isVSCodeLMAvailable } from './vscode-lm-utils';
 import { Logger } from './logger';
 
-/**
- * Manages the registration and disposal of commands.
- */
 export class CommandManager {
   private disposables: vscode.Disposable[] = [];
 
   constructor(private context: vscode.ExtensionContext) {}
 
   registerCommands() {
+    // 1. Generate commit message
+    this.registerCommand('commitcraft.generate', generateCommitMsg);
     this.registerCommand('extension.ai-commit', generateCommitMsg);
-    this.registerCommand('extension.configure-ai-commit', () =>
-      vscode.commands.executeCommand('workbench.action.openSettings', 'ai-commit')
+
+    // 2. Generate multiple options
+    this.registerCommand('commitcraft.generateCandidates', generateMultipleCandidates);
+    this.registerCommand('ai-commit.generateCandidates', generateMultipleCandidates);
+
+    // 3. Pre-Commit Code Review
+    this.registerCommand('commitcraft.reviewChanges', reviewStagedChanges);
+    this.registerCommand('ai-commit.reviewChanges', reviewStagedChanges);
+
+    // 4. Generate Pull Request Description
+    this.registerCommand('commitcraft.generatePR', generatePRDescription);
+    this.registerCommand('ai-commit.generatePR', generatePRDescription);
+
+    // 5. Suggest Branch Name
+    this.registerCommand('commitcraft.suggestBranch', suggestBranchName);
+    this.registerCommand('ai-commit.suggestBranch', suggestBranchName);
+
+    // 6. Quick Setup Wizard
+    const runSetup = async () => {
+      await this.runQuickSetupWizard();
+    };
+    this.registerCommand('commitcraft.quickSetup', runSetup);
+    this.registerCommand('ai-commit.quickSetup', runSetup);
+
+    // 7. Switch Provider
+    const runSwitch = async () => {
+      await this.runSwitchProvider();
+    };
+    this.registerCommand('commitcraft.switchProvider', runSwitch);
+    this.registerCommand('ai-commit.switchProvider', runSwitch);
+
+    // 8. Select Model
+    const runModel = async () => {
+      await this.runSelectModel();
+    };
+    this.registerCommand('commitcraft.selectModel', runModel);
+    this.registerCommand('ai-commit.selectModel', runModel);
+
+    // 9. Switch Commit Style
+    const runStyle = async () => {
+      await this.runSwitchStyle();
+    };
+    this.registerCommand('commitcraft.switchStyle', runStyle);
+    this.registerCommand('ai-commit.switchStyle', runStyle);
+
+    // 10. Set API Key
+    const runKey = async (targetProviderId?: string) => {
+      await this.runSetApiKey(targetProviderId);
+    };
+    this.registerCommand('commitcraft.setApiKey', runKey);
+    this.registerCommand('ai-commit.setApiKey', runKey);
+
+    // 11. Set API Base URL
+    const runBase = async (targetProviderId?: string) => {
+      await this.runSetBaseUrl(targetProviderId);
+    };
+    this.registerCommand('commitcraft.setBaseUrl', runBase);
+    this.registerCommand('ai-commit.setBaseUrl', runBase);
+
+    // 12. Switch Language
+    const runLang = async () => {
+      await this.runSwitchLanguage();
+    };
+    this.registerCommand('commitcraft.switchLanguage', runLang);
+    this.registerCommand('ai-commit.switchLanguage', runLang);
+
+    // 13. Toggle Emoji
+    const runEmoji = async () => {
+      const configManager = ConfigurationManager.getInstance();
+      const current = configManager.getConfig<boolean>(ConfigKeys.EMOJI_ENABLED, false);
+      const next = !current;
+      await configManager.updateConfig(ConfigKeys.EMOJI_ENABLED, next);
+      vscode.window.showInformationMessage(
+        `CommitCraft: Emojis are now ${next ? 'enabled' : 'disabled'}`
+      );
+    };
+    this.registerCommand('commitcraft.toggleEmoji', runEmoji);
+    this.registerCommand('ai-commit.toggleEmoji', runEmoji);
+
+    // 14. Open Settings
+    const runSettings = () => {
+      vscode.commands.executeCommand('workbench.action.openSettings', 'commitcraft');
+    };
+    this.registerCommand('commitcraft.openSettings', runSettings);
+    this.registerCommand('ai-commit.openSettings', runSettings);
+
+    // 15. Quick Action Hub / Quick Menu (for 1-click UI without Command Palette)
+    const runMenu = async () => {
+      await this.runQuickMenu();
+    };
+    this.registerCommand('commitcraft.quickMenu', runMenu);
+    this.registerCommand('ai-commit.quickMenu', runMenu);
+
+    // Legacy showAvailableModels
+    this.registerCommand('commitcraft.showAvailableModels', runModel);
+    this.registerCommand('ai-commit.showAvailableModels', runModel);
+  }
+
+  /**
+   * Quick Action Hub Popup Menu (1-Click UI)
+   */
+  public async runQuickMenu() {
+    const configManager = ConfigurationManager.getInstance();
+    const provider = configManager.getActiveProvider();
+    const activeModel = configManager.getActiveModel();
+
+    const items: (vscode.QuickPickItem & { action?: () => Promise<any> | any })[] = [
+      {
+        label: '$(git-commit) Generate Commit Message',
+        description: 'Default',
+        detail: 'Analyze staged changes and populate Git commit input box',
+        action: async () => vscode.commands.executeCommand('commitcraft.generate')
+      },
+      {
+        label: '$(list-unordered) Generate 3 Commit Options',
+        description: 'Conventional / Concise / Detailed',
+        detail: 'Generate 3 candidate styles to choose from',
+        action: async () => vscode.commands.executeCommand('commitcraft.generateCandidates')
+      },
+      {
+        label: '$(shield) Pre-Commit Code Review',
+        description: 'Security & Bug Audit',
+        detail: 'Review diff for runtime bugs, credential leaks, and console.logs',
+        action: async () => vscode.commands.executeCommand('commitcraft.reviewChanges')
+      },
+      {
+        label: '$(git-pull-request) Generate PR Description',
+        description: 'Markdown',
+        detail: 'Generate full Pull Request markdown description from branch',
+        action: async () => vscode.commands.executeCommand('commitcraft.generatePR')
+      },
+      {
+        label: '$(git-branch) Suggest Branch Name',
+        description: 'Standard naming',
+        detail: 'Get Git branch name suggestions from code changes',
+        action: async () => vscode.commands.executeCommand('commitcraft.suggestBranch')
+      },
+      {
+        label: '$(sparkle) Quick Setup Wizard',
+        description: `Current: ${provider.name} (${activeModel})`,
+        detail: 'Change AI Provider, API key, model, or language step-by-step',
+        action: async () => this.runQuickSetupWizard()
+      },
+      {
+        label: '$(hubot) Switch AI Provider',
+        description: provider.name,
+        detail: 'Switch between Gemini, Copilot, OpenAI, Claude, DeepSeek, Ollama...',
+        action: async () => this.runSwitchProvider()
+      },
+      {
+        label: '$(gear) Open Settings',
+        description: 'VS Code Settings UI',
+        detail: 'Configure CommitCraft in VS Code Settings page',
+        action: () => vscode.commands.executeCommand('workbench.action.openSettings', 'commitcraft')
+      }
+    ];
+
+    const selected = await vscode.window.showQuickPick(items, {
+      title: 'CommitCraft — Quick Action Hub',
+      placeHolder: 'Select an action (Click to run)'
+    });
+
+    if (selected?.action) {
+      await selected.action();
+    }
+  }
+
+  /**
+   * Interactive step-by-step Setup Wizard
+   */
+  private async runQuickSetupWizard() {
+    const configManager = ConfigurationManager.getInstance();
+
+    // Step 1: Select Provider
+    const providerItems = Object.values(PROVIDERS).map((p) => ({
+      label: `${p.icon} ${p.name}`,
+      description: p.id === 'gemini' ? `${p.description} (Recommended)` : p.description,
+      provider: p
+    }));
+
+    const selectedProviderItem = await vscode.window.showQuickPick(providerItems, {
+      title: 'CommitCraft Setup (1/4): Choose AI Provider',
+      placeHolder: 'Select AI provider'
+    });
+
+    if (!selectedProviderItem) {
+      return;
+    }
+
+    const provider = selectedProviderItem.provider;
+    await configManager.updateConfig(ConfigKeys.AI_PROVIDER, provider.id);
+
+    // Step 2: Base URL if Ollama or Custom
+    if (provider.id === 'ollama' || provider.id === 'custom') {
+      const defaultUrl = provider.defaultBaseUrl || 'http://localhost:11434/v1';
+      const configKey = provider.id === 'ollama' ? ConfigKeys.OLLAMA_BASE_URL : ConfigKeys.CUSTOM_BASE_URL;
+      const currentUrl = configManager.getConfig<string>(configKey, defaultUrl);
+
+      const enteredUrl = await vscode.window.showInputBox({
+        title: `CommitCraft Setup: Base URL for ${provider.name}`,
+        prompt: 'Enter API Base URL endpoint',
+        value: currentUrl || defaultUrl,
+        ignoreFocusOut: true
+      });
+
+      if (enteredUrl !== undefined) {
+        await configManager.updateConfig(configKey, enteredUrl.trim());
+      }
+    }
+
+    // Step 3: API Key (if required)
+    if (provider.requiresApiKey) {
+      const existingKey = await configManager.getEffectiveApiKey(provider.id);
+      const maskedKey = existingKey ? `${existingKey.slice(0, 4)}...${existingKey.slice(-4)}` : '';
+
+      const enteredKey = await vscode.window.showInputBox({
+        title: `CommitCraft Setup (2/4): API Key for ${provider.name}`,
+        prompt: existingKey
+          ? `Current key: [${maskedKey}]. Enter a new key or press Enter to keep current.`
+          : `Enter API Key for ${provider.name}`,
+        password: true,
+        ignoreFocusOut: true,
+        placeHolder: 'Paste API key here...'
+      });
+
+      if (enteredKey !== undefined && enteredKey.trim() !== '') {
+        await configManager.setSecretApiKey(provider.id, enteredKey.trim());
+        if (provider.configApiKey) {
+          await configManager.updateConfig(provider.configApiKey, enteredKey.trim());
+        }
+      }
+    }
+
+    // Step 4: Model Selection
+    const modelItems = provider.presetModels.map((m) => ({
+      label: m.label,
+      description: m.description
+    }));
+
+    if (provider.id === 'copilot' && isVSCodeLMAvailable()) {
+      const lmModels = await getVSCodeLMModels();
+      lmModels.forEach((lm) => {
+        if (!modelItems.some((m) => m.label === lm.id)) {
+          modelItems.push({ label: lm.id, description: lm.name });
+        }
+      });
+    }
+
+    modelItems.push({
+      label: 'Enter custom model name...',
+      description: 'Specify model identifier manually'
+    });
+
+    const selectedModel = await vscode.window.showQuickPick(modelItems, {
+      title: `CommitCraft Setup (3/4): Select Model for ${provider.name}`,
+      placeHolder: `Default: ${provider.defaultModel}`
+    });
+
+    if (selectedModel) {
+      let finalModelName = selectedModel.label;
+      if (selectedModel.label === 'Enter custom model name...') {
+        const customName = await vscode.window.showInputBox({
+          title: 'Custom Model Name',
+          prompt: 'Enter model identifier (e.g. gpt-4o, gemini-2.5-flash)',
+          value: provider.defaultModel,
+          ignoreFocusOut: true
+        });
+        if (customName) {
+          finalModelName = customName.trim();
+        }
+      }
+      await configManager.updateConfig(provider.configModel, finalModelName);
+    }
+
+    // Step 5: Language Selection
+    const currentLang = configManager.getConfig<string>(
+      ConfigKeys.AI_COMMIT_LANGUAGE,
+      'English'
+    );
+    const langItems = SUPPORTED_LANGUAGES.map((l) => ({
+      label: l.label,
+      description: l.label === currentLang ? `${l.description} (Current)` : l.description
+    }));
+
+    const selectedLang = await vscode.window.showQuickPick(langItems, {
+      title: 'CommitCraft Setup (4/4): Commit Message Language',
+      placeHolder: `Select language (Current: ${currentLang})`
+    });
+
+    if (selectedLang) {
+      await configManager.updateConfig(
+        ConfigKeys.AI_COMMIT_LANGUAGE,
+        selectedLang.label
+      );
+    }
+
+    const activeModel = configManager.getActiveModel(provider.id);
+    const choice = await vscode.window.showInformationMessage(
+      `CommitCraft configured successfully with ${provider.name} (${activeModel}).`,
+      'Generate Commit Message',
+      'Done'
     );
 
-    // Show available OpenAI models
-    this.registerCommand('ai-commit.showAvailableModels', async () => {
-      const configManager = ConfigurationManager.getInstance();
-      const models = await configManager.getAvailableOpenAIModels();
-      const selected = await vscode.window.showQuickPick(models, {
-        placeHolder: 'Please select a model'
-      });
-      
-      if (selected) {
-        const config = vscode.workspace.getConfiguration('ai-commit');
-        await config.update('OPENAI_MODEL', selected, vscode.ConfigurationTarget.Global);
-      }
+    if (choice === 'Generate Commit Message') {
+      await vscode.commands.executeCommand('extension.ai-commit');
+    }
+  }
+
+  /**
+   * Switch active AI provider
+   */
+  private async runSwitchProvider() {
+    const configManager = ConfigurationManager.getInstance();
+    const currentProvider = configManager.getActiveProvider();
+
+    const providerItems = Object.values(PROVIDERS).map((p) => ({
+      label: `${p.icon} ${p.name}`,
+      description: p.id === currentProvider.id ? `${p.description} (Active)` : p.description,
+      provider: p
+    }));
+
+    const selected = await vscode.window.showQuickPick(providerItems, {
+      title: 'Switch AI Provider',
+      placeHolder: `Currently using: ${currentProvider.name}`
     });
 
-    /**
-     * @deprecated
-     * This function is deprecated because Gemini API does not currently support listing models via API.
-     * 
-     * Show available Gemini models
-     */
-    /*
-    this.registerCommand('ai-commit.showAvailableGeminiModels', async () => {
-      const configManager = ConfigurationManager.getInstance();
-      const models = await configManager.getAvailableGeminiModels(); // Use the updated function
-      const selected = await vscode.window.showQuickPick(models, {
-        placeHolder: 'Please select a Gemini model'
-      });
+    if (!selected) {
+      return;
+    }
 
-      if (selected) {
-        const config = vscode.workspace.getConfiguration('ai-commit');
-        await config.update('GEMINI_MODEL', selected, vscode.ConfigurationTarget.Global);
+    const provider = selected.provider;
+    await configManager.updateConfig(ConfigKeys.AI_PROVIDER, provider.id);
+
+    const apiKey = await configManager.getEffectiveApiKey(provider.id);
+    if (!apiKey && provider.requiresApiKey) {
+      const setKeyChoice = await vscode.window.showWarningMessage(
+        `Switched to ${provider.name}, but API Key is missing.`,
+        'Enter API Key Now',
+        'Later'
+      );
+      if (setKeyChoice === 'Enter API Key Now') {
+        await this.runSetApiKey(provider.id);
       }
+    } else {
+      const activeModel = configManager.getActiveModel(provider.id);
+      vscode.window.showInformationMessage(
+        `AI Provider switched to ${provider.name} (${activeModel})`
+      );
+    }
+  }
+
+  /**
+   * Select model for active provider
+   */
+  private async runSelectModel() {
+    const configManager = ConfigurationManager.getInstance();
+    const provider = configManager.getActiveProvider();
+    const currentModel = configManager.getActiveModel(provider.id);
+
+    const modelItems: { label: string; description?: string }[] = [];
+
+    provider.presetModels.forEach((m) => {
+      modelItems.push({
+        label: m.label,
+        description: m.label === currentModel ? `${m.description || ''} (Active)` : m.description
+      });
     });
-    */
+
+    if (provider.id === 'openai') {
+      try {
+        const onlineModels = await fetchAvailableOpenAIModels('openai');
+        onlineModels.forEach((m) => {
+          if (!modelItems.some((item) => item.label === m)) {
+            modelItems.push({ label: m, description: 'Available from OpenAI API' });
+          }
+        });
+      } catch {
+        // Ignore fallback
+      }
+    } else if (provider.id === 'copilot' && isVSCodeLMAvailable()) {
+      const lmModels = await getVSCodeLMModels();
+      lmModels.forEach((lm) => {
+        if (!modelItems.some((item) => item.label === lm.id)) {
+          modelItems.push({ label: lm.id, description: lm.name });
+        }
+      });
+    }
+
+    modelItems.push({
+      label: 'Enter custom model name...',
+      description: 'Type model name manually'
+    });
+
+    const selected = await vscode.window.showQuickPick(modelItems, {
+      title: `Select Model for ${provider.name}`,
+      placeHolder: `Current model: ${currentModel}`
+    });
+
+    if (!selected) {
+      return;
+    }
+
+    let finalModel = selected.label;
+    if (selected.label === 'Enter custom model name...') {
+      const customName = await vscode.window.showInputBox({
+        title: `Custom Model for ${provider.name}`,
+        prompt: 'Enter model identifier',
+        value: currentModel,
+        ignoreFocusOut: true
+      });
+      if (!customName) {
+        return;
+      }
+      finalModel = customName.trim();
+    }
+
+    await configManager.updateConfig(provider.configModel, finalModel);
+    vscode.window.showInformationMessage(
+      `CommitCraft: ${provider.name} model set to "${finalModel}"`
+    );
+  }
+
+  /**
+   * Switch commit style
+   */
+  private async runSwitchStyle() {
+    const configManager = ConfigurationManager.getInstance();
+    const currentStyle = configManager.getConfig<string>(ConfigKeys.COMMIT_STYLE, 'conventional');
+
+    const items = COMMIT_STYLES.map((s) => ({
+      label: s.label,
+      description: s.id === currentStyle ? `${s.description} (Current)` : s.description,
+      styleId: s.id
+    }));
+
+    const selected = await vscode.window.showQuickPick(items, {
+      title: 'Select Commit Message Style',
+      placeHolder: 'Pick preferred format style'
+    });
+
+    if (selected) {
+      await configManager.updateConfig(ConfigKeys.COMMIT_STYLE, selected.styleId);
+      vscode.window.showInformationMessage(`Commit style set to: ${selected.label}`);
+    }
+  }
+
+  /**
+   * Set API Key for a provider
+   */
+  private async runSetApiKey(targetProviderId?: string) {
+    const configManager = ConfigurationManager.getInstance();
+    let provider = targetProviderId ? PROVIDERS[targetProviderId] : configManager.getActiveProvider();
+
+    if (!provider) {
+      const items = Object.values(PROVIDERS)
+        .filter((p) => p.requiresApiKey)
+        .map((p) => ({
+          label: `${p.icon} ${p.name}`,
+          provider: p
+        }));
+      const chosen = await vscode.window.showQuickPick(items, {
+        title: 'Select Provider to set API Key'
+      });
+      if (!chosen) {
+        return;
+      }
+      provider = chosen.provider;
+    }
+
+    const existingKey = await configManager.getEffectiveApiKey(provider.id);
+    const masked = existingKey ? `${existingKey.slice(0, 4)}...${existingKey.slice(-4)}` : '';
+
+    const enteredKey = await vscode.window.showInputBox({
+      title: `Set API Key for ${provider.name}`,
+      prompt: existingKey
+        ? `Current key: [${masked}]. Enter new key, or leave empty to clear.`
+        : `Enter your API key for ${provider.name}`,
+      password: true,
+      ignoreFocusOut: true,
+      placeHolder: 'Paste API key here...'
+    });
+
+    if (enteredKey === undefined) {
+      return;
+    }
+
+    await configManager.setSecretApiKey(provider.id, enteredKey.trim());
+    if (provider.configApiKey) {
+      await configManager.updateConfig(provider.configApiKey, enteredKey.trim());
+    }
+
+    if (enteredKey.trim() === '') {
+      vscode.window.showInformationMessage(`API Key for ${provider.name} cleared.`);
+    } else {
+      vscode.window.showInformationMessage(`API Key for ${provider.name} saved securely!`);
+    }
+  }
+
+  /**
+   * Set API Base URL for a provider (Ollama, OpenAI, Custom, etc.)
+   */
+  private async runSetBaseUrl(targetProviderId?: string) {
+    const configManager = ConfigurationManager.getInstance();
+    let provider = targetProviderId ? PROVIDERS[targetProviderId] : configManager.getActiveProvider();
+
+    if (!provider) {
+      const items = Object.values(PROVIDERS).map((p) => ({
+        label: `${p.icon} ${p.name}`,
+        provider: p
+      }));
+      const chosen = await vscode.window.showQuickPick(items, {
+        title: 'Select Provider to set API Base URL'
+      });
+      if (!chosen) {
+        return;
+      }
+      provider = chosen.provider;
+    }
+
+    let configKey = provider.configBaseUrl;
+    if (!configKey) {
+      if (provider.id === 'openai') {
+        configKey = ConfigKeys.OPENAI_BASE_URL;
+      } else if (provider.id === 'ollama') {
+        configKey = ConfigKeys.OLLAMA_BASE_URL;
+      } else if (provider.id === 'custom') {
+        configKey = ConfigKeys.CUSTOM_BASE_URL;
+      } else {
+        configKey = ConfigKeys.CUSTOM_BASE_URL;
+      }
+    }
+
+    const currentUrl = configManager.getConfig<string>(configKey, provider.defaultBaseUrl || 'http://localhost:8000/v1');
+
+    const enteredUrl = await vscode.window.showInputBox({
+      title: `Set API Base URL for ${provider.name}`,
+      prompt: 'Enter Base URL endpoint (e.g. http://localhost:11434/v1, https://api.openai.com/v1)',
+      value: currentUrl,
+      ignoreFocusOut: true,
+      placeHolder: 'http://localhost:11434/v1'
+    });
+
+    if (enteredUrl === undefined) {
+      return;
+    }
+
+    await configManager.updateConfig(configKey, enteredUrl.trim());
+    vscode.window.showInformationMessage(
+      `CommitCraft: Base URL for ${provider.name} set to "${enteredUrl.trim()}"`
+    );
+  }
+
+  /**
+   * Switch commit message language
+   */
+  private async runSwitchLanguage() {
+    const configManager = ConfigurationManager.getInstance();
+    const currentLang = configManager.getConfig<string>(
+      ConfigKeys.AI_COMMIT_LANGUAGE,
+      'English'
+    );
+
+    const items = SUPPORTED_LANGUAGES.map((l) => ({
+      label: l.label,
+      description: l.label === currentLang ? `${l.description} (Current)` : l.description
+    }));
+
+    const selected = await vscode.window.showQuickPick(items, {
+      title: 'Select Commit Message Language',
+      placeHolder: `Current: ${currentLang}`
+    });
+
+    if (!selected) {
+      return;
+    }
+
+    await configManager.updateConfig(
+      ConfigKeys.AI_COMMIT_LANGUAGE,
+      selected.label
+    );
+    vscode.window.showInformationMessage(
+      `CommitCraft: Language set to "${selected.label}"`
+    );
   }
 
   private registerCommand(command: string, handler: (...args: any[]) => any) {
@@ -58,22 +613,9 @@ export class CommandManager {
       try {
         Logger.info(`Executing command: ${command}`);
         await handler(...args);
-      } catch (error) {
+      } catch (error: any) {
         Logger.error(`Command '${command}' failed:`, error);
-        const result = await vscode.window.showErrorMessage(
-          `Failed: ${error.message}`,
-          'Retry',
-          'Configure'
-        );
-
-        if (result === 'Retry') {
-          await handler(...args);
-        } else if (result === 'Configure') {
-          await vscode.commands.executeCommand(
-            'workbench.action.openSettings',
-            'ai-commit'
-          );
-        }
+        vscode.window.showErrorMessage(`CommitCraft error: ${error?.message || error}`);
       }
     });
 

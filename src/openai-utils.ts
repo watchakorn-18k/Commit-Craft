@@ -1,85 +1,96 @@
 import OpenAI from 'openai';
 import { ChatCompletionMessageParam } from 'openai/resources';
 import { ReasoningEffort } from 'openai/resources/shared';
-import { ConfigKeys, ConfigurationManager } from './config';
+import { ConfigKeys, ConfigurationManager, PROVIDERS } from './config';
+import { Logger } from './logger';
 
 /**
- * Creates and returns an OpenAI configuration object.
- * @returns {Object} - The OpenAI configuration object.
- * @throws {Error} - Throws an error if the API key is missing or empty.
+ * Creates and returns an OpenAI client instance configured for the specified provider.
  */
-function getOpenAIConfig() {
+export async function createOpenAIApiClient(providerId: string = 'openai'): Promise<OpenAI> {
   const configManager = ConfigurationManager.getInstance();
-  const apiKey = configManager.getConfig<string>(ConfigKeys.OPENAI_API_KEY);
-  const baseURL = configManager.getConfig<string>(ConfigKeys.OPENAI_BASE_URL);
-  const apiVersion = configManager.getConfig<string>(ConfigKeys.AZURE_API_VERSION);
+  const provider = PROVIDERS[providerId] || PROVIDERS.openai;
 
-  if (!apiKey) {
-    throw new Error('The OPENAI_API_KEY environment variable is missing or empty.');
-  }
+  let apiKey = await configManager.getEffectiveApiKey(providerId);
+  let baseURL: string | undefined = provider.defaultBaseUrl;
 
-  const config: {
-    apiKey: string;
-    baseURL?: string;
-    defaultQuery?: { 'api-version': string };
-    defaultHeaders?: { 'api-key': string };
-  } = {
-    apiKey
-  };
-
-  if (baseURL) {
-    config.baseURL = baseURL;
-    if (apiVersion) {
-      config.defaultQuery = { 'api-version': apiVersion };
-      config.defaultHeaders = { 'api-key': apiKey };
+  if (providerId === 'openai') {
+    const customBaseUrl = configManager.getConfig<string>(ConfigKeys.OPENAI_BASE_URL);
+    if (customBaseUrl && customBaseUrl.trim() !== '') {
+      baseURL = customBaseUrl.trim();
+    }
+  } else if (providerId === 'ollama') {
+    const ollamaUrl = configManager.getConfig<string>(ConfigKeys.OLLAMA_BASE_URL);
+    baseURL = ollamaUrl && ollamaUrl.trim() !== '' ? ollamaUrl.trim() : 'http://localhost:11434/v1';
+    if (!apiKey) {
+      apiKey = 'ollama'; // Ollama doesn't require real key
+    }
+  } else if (providerId === 'custom') {
+    const customUrl = configManager.getConfig<string>(ConfigKeys.CUSTOM_BASE_URL);
+    baseURL = customUrl && customUrl.trim() !== '' ? customUrl.trim() : 'http://localhost:8000/v1';
+    if (!apiKey) {
+      apiKey = 'custom';
     }
   }
 
-  return config;
+  if (!apiKey && provider.requiresApiKey) {
+    throw new Error(`API key for ${provider.name} is missing.`);
+  }
+
+  const defaultHeaders: Record<string, string> = {};
+  if (providerId === 'openrouter') {
+    defaultHeaders['HTTP-Referer'] = 'https://github.com/sitoi/commitcraft';
+    defaultHeaders['X-Title'] = 'CommitCraft VSCode Extension';
+  }
+
+  const azureVersion = configManager.getConfig<string>(ConfigKeys.AZURE_API_VERSION);
+  const defaultQuery = (providerId === 'openai' && azureVersion)
+    ? { 'api-version': azureVersion }
+    : undefined;
+
+  return new OpenAI({
+    apiKey: apiKey || 'dummy',
+    baseURL,
+    defaultHeaders: Object.keys(defaultHeaders).length > 0 ? defaultHeaders : undefined,
+    defaultQuery
+  });
 }
 
 /**
- * Creates and returns an OpenAI API instance.
- * @returns {OpenAI} - The OpenAI API instance.
+ * Sends a chat completion request to an OpenAI-compatible API.
  */
-export function createOpenAIApi() {
-  const config = getOpenAIConfig();
-  return new OpenAI(config);
-}
-
-/**
- * Sends a chat completion request to the OpenAI API.
- * @param {Array<Object>} messages - The messages to send to the API.
- * @returns {Promise<string>} - A promise that resolves to the API response.
- */
-export async function ChatGPTAPI(messages: ChatCompletionMessageParam[]) {
-  const openai = createOpenAIApi();
+export async function OpenAICompatibleAPI(
+  messages: ChatCompletionMessageParam[],
+  providerId: string = 'openai'
+): Promise<string> {
+  const openai = await createOpenAIApiClient(providerId);
   const configManager = ConfigurationManager.getInstance();
-  const model = configManager.getConfig<string>(ConfigKeys.OPENAI_MODEL);
-  const temperature = configManager.getConfig<number>(
-    ConfigKeys.OPENAI_TEMPERATURE,
-    0.7
-  );
+  const model = configManager.getActiveModel(providerId);
+
+  let temperature = 0.7;
+  const provider = PROVIDERS[providerId];
+  if (provider?.configTemperature) {
+    temperature = configManager.getConfig<number>(provider.configTemperature, 0.7);
+  }
+
+  Logger.info(`Sending request to ${providerId} using model: ${model}`);
 
   const completion = await openai.chat.completions.create({
     model,
-    messages: messages as ChatCompletionMessageParam[],
+    messages,
     temperature
   });
 
-  return completion.choices[0]!.message?.content;
+  return completion.choices[0]?.message?.content || '';
 }
 
 /**
  * Sends a request to the OpenAI Responses API.
- * Supports reasoning effort and output verbosity configuration.
- * @param {Array<Object>} messages - The messages to send (same format as Chat Completions).
- * @returns {Promise<string>} - A promise that resolves to the API response text.
  */
-export async function ResponsesAPI(messages: ChatCompletionMessageParam[]) {
-  const openai = createOpenAIApi();
+export async function ResponsesAPI(messages: ChatCompletionMessageParam[]): Promise<string> {
+  const openai = await createOpenAIApiClient('openai');
   const configManager = ConfigurationManager.getInstance();
-  const model = configManager.getConfig<string>(ConfigKeys.OPENAI_MODEL);
+  const model = configManager.getActiveModel('openai');
   const reasoningEffort = configManager.getConfig<string>(
     ConfigKeys.OPENAI_REASONING_EFFORT,
     'medium'
@@ -96,7 +107,6 @@ export async function ResponsesAPI(messages: ChatCompletionMessageParam[]) {
   };
   const maxOutputTokens = verbosityTokenMap[textVerbosity] ?? 4000;
 
-  // Extract system message as instructions; pass the rest as input
   const systemMsg = messages.find((m) => m.role === 'system');
   const instructions = systemMsg
     ? typeof systemMsg.content === 'string'
@@ -120,4 +130,22 @@ export async function ResponsesAPI(messages: ChatCompletionMessageParam[]) {
   });
 
   return response.output_text;
+}
+
+/**
+ * Fetch available models from an OpenAI-compatible endpoint
+ */
+export async function fetchAvailableOpenAIModels(providerId: string = 'openai'): Promise<string[]> {
+  try {
+    const client = await createOpenAIApiClient(providerId);
+    const modelsList = await client.models.list();
+    const result: string[] = [];
+    for await (const model of modelsList) {
+      result.push(model.id);
+    }
+    return result;
+  } catch (error) {
+    Logger.error(`Failed to fetch models for ${providerId}:`, error);
+    return [];
+  }
 }
