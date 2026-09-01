@@ -255,3 +255,53 @@ export async function stageAllChanges(repo: any): Promise<void> {
   const git = simpleGit(rootPath);
   await git.add(['-A']);
 }
+
+/**
+ * Retrieves commit history for changelog generation (from previous tag to HEAD, or all commits)
+ */
+export async function getCommitsForChangelog(
+  repo: any
+): Promise<{ commits: string; lastTag: string | null; error?: string | null }> {
+  try {
+    const rootPath =
+      repo?.rootUri?.fsPath || vscode.workspace.workspaceFolders?.[0].uri.fsPath;
+    if (!rootPath) {
+      throw new Error('No workspace folder found');
+    }
+    const git = simpleGit(rootPath);
+
+    let lastTag: string | null = null;
+    try {
+      const tagResult = await git.tags({ '--sort': '-creatordate' });
+      if (tagResult.all.length > 0) {
+        lastTag = tagResult.all[0];
+      }
+    } catch {
+      // Ignore tag listing error
+    }
+
+    let logResult: any;
+    if (lastTag) {
+      try {
+        logResult = await git.log({ from: lastTag, to: 'HEAD' });
+      } catch {
+        logResult = await git.log({ maxCount: 50 });
+      }
+    } else {
+      logResult = await git.log({ maxCount: 50 });
+    }
+
+    const commits = logResult.all
+      .map((c: any) => `- ${c.message} (${c.hash.substring(0, 7)})`)
+      .join('\n');
+
+    return {
+      commits: commits || 'No commits found.',
+      lastTag,
+      error: null
+    };
+  } catch (error: any) {
+    Logger.error('Error fetching commits for changelog:', error);
+    return { commits: '', lastTag: null, error: error?.message || String(error) };
+  }
+}

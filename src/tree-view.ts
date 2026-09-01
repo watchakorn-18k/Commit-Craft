@@ -124,6 +124,15 @@ export class CommitCraftTreeDataProvider
             command: 'commitcraft.suggestBranch',
             title: 'Suggest Branch Name'
           }
+        }),
+        new CommitCraftTreeItem('Generate CHANGELOG.md', vscode.TreeItemCollapsibleState.None, {
+          description: 'Keep a Changelog',
+          tooltip: 'Auto-generate or update CHANGELOG.md for this release',
+          iconPath: new vscode.ThemeIcon('notebook'),
+          command: {
+            command: 'commitcraft.generateChangelog',
+            title: 'Generate CHANGELOG.md'
+          }
         })
       ];
     }

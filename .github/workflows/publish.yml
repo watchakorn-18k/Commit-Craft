@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - 'v*'
+      - '*'
 
 jobs:
   publish:
@@ -15,7 +16,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
 
       - name: Install Dependencies
@@ -28,6 +29,10 @@ jobs:
         run: npm run build
 
       - name: Publish to VS Code Marketplace
-        run: npx vsce publish --no-dependencies -p ${{ secrets.VSCE_PAT }}
-        env:
-          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        run: |
+          TOKEN="${{ secrets.VSCE_PAT || secrets.VS_MARKETPLACE_TOKEN }}"
+          if [ -z "$TOKEN" ]; then
+            echo "::error::Marketplace Personal Access Token is missing! Please set secret 'VSCE_PAT' or 'VS_MARKETPLACE_TOKEN' in GitHub Repository Settings -> Secrets and variables -> Actions."
+            exit 1
+          fi
+          npx vsce publish --no-dependencies -p "$TOKEN"

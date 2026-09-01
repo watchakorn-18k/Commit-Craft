@@ -194,3 +194,54 @@ Output ONLY a JSON array of strings:
     }
   ];
 };
+
+/**
+ * Builds prompt for Keep a Changelog markdown generation
+ */
+export const getChangelogPrompt = (
+  commits: string,
+  version: string,
+  date: string,
+  language: string = 'English'
+) => {
+  return [
+    {
+      role: 'system',
+      content: `You are a release manager generating a CHANGELOG entry adhering strictly to the "Keep a Changelog" standard (https://keepachangelog.com/).
+
+Target Version: [${version}] - ${date}
+Language: ${language}.
+
+Rules:
+1. Group items under standard categories ONLY if there are matching changes:
+   - ### Added (for new features)
+   - ### Changed (for changes in existing functionality)
+   - ### Deprecated (for soon-to-be removed features)
+   - ### Removed (for now removed features)
+   - ### Fixed (for any bug fixes)
+   - ### Security (in case of vulnerabilities)
+2. Be concise, technical, and accurate based solely on the provided commit list.
+3. Do NOT include empty categories.
+4. Output ONLY the markdown entry for this version (starting with "## [${version}] - ${date}"). Do NOT output top-level "# Changelog" header or markdown fences.
+
+Example output:
+## [${version}] - ${date}
+
+### Added
+- Multi-provider support for Google Gemini, OpenAI, Claude, and DeepSeek
+- Dedicated Sidebar and Source Control TreeView panel
+
+### Changed
+- Refactored configuration management to utilize SecretStorage
+
+### Fixed
+- Resolved API endpoint timeout issues on slow connections
+`
+    },
+    {
+      role: 'user',
+      content: `Commits for Version ${version}:\n\n${commits}`
+    }
+  ];
+};
+

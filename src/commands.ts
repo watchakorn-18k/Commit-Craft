@@ -3,6 +3,7 @@ import { generateCommitMsg, generateMultipleCandidates } from './generate-commit
 import { reviewStagedChanges } from './review-utils';
 import { generatePRDescription } from './pr-utils';
 import { suggestBranchName } from './branch-utils';
+import { generateChangelog } from './changelog-utils';
 import {
   ConfigKeys,
   ConfigurationManager,
@@ -39,6 +40,10 @@ export class CommandManager {
     // 5. Suggest Branch Name
     this.registerCommand('commitcraft.suggestBranch', suggestBranchName);
     this.registerCommand('ai-commit.suggestBranch', suggestBranchName);
+
+    // 6. Generate CHANGELOG.md (Keep a Changelog)
+    this.registerCommand('commitcraft.generateChangelog', generateChangelog);
+    this.registerCommand('ai-commit.generateChangelog', generateChangelog);
 
     // 6. Quick Setup Wizard
     const runSetup = async () => {
@@ -159,6 +164,12 @@ export class CommandManager {
         description: 'Standard naming',
         detail: 'Get Git branch name suggestions from code changes',
         action: async () => vscode.commands.executeCommand('commitcraft.suggestBranch')
+      },
+      {
+        label: '$(notebook) Generate CHANGELOG.md',
+        description: 'Keep a Changelog',
+        detail: 'Auto-generate or update CHANGELOG.md for this release',
+        action: async () => vscode.commands.executeCommand('commitcraft.generateChangelog')
       },
       {
         label: '$(sparkle) Quick Setup Wizard',

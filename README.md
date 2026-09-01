@@ -78,6 +78,7 @@ All commands can be accessed via GUI buttons, the Status Bar hub, or Command Pal
 | `CommitCraft: Pre-Commit Code Review` | Audit staged changes for bugs and security risks |
 | `CommitCraft: Generate PR Description` | Generate PR description from branch history |
 | `CommitCraft: Suggest Branch Name` | Suggest Git branch names based on diff |
+| `CommitCraft: Generate CHANGELOG.md` | Auto-generate/update CHANGELOG.md (Keep a Changelog standard) |
 | `CommitCraft: Quick Action Hub` | Open 1-click action popup menu |
 | `CommitCraft: Quick Setup Wizard` | Step-by-step provider and model setup |
 | `CommitCraft: Switch AI Provider` | Switch active provider (Gemini, Copilot, OpenAI, Claude, DeepSeek, Ollama, etc.) |

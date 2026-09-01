@@ -88,6 +88,11 @@
         "title": "CommitCraft: Suggest Branch Name"
       },
       {
+        "command": "commitcraft.generateChangelog",
+        "icon": "$(notebook)",
+        "title": "CommitCraft: Generate CHANGELOG.md"
+      },
+      {
         "command": "commitcraft.quickMenu",
         "icon": "$(zap)",
         "title": "CommitCraft: Quick Action Hub"
@@ -161,8 +166,12 @@
           "group": "navigation@4"
         },
         {
-          "command": "commitcraft.quickMenu",
+          "command": "commitcraft.generateChangelog",
           "group": "navigation@5"
+        },
+        {
+          "command": "commitcraft.quickMenu",
+          "group": "navigation@6"
         }
       ],
       "scm/resourceState/context": [
