@@ -34,4 +34,4 @@ jobs:
             echo "::error::Marketplace Personal Access Token is missing! Please set secret 'VSCE_PAT' or 'VS_MARKETPLACE_TOKEN' in GitHub Repository Settings -> Secrets and variables -> Actions."
             exit 1
           fi
-          npx vsce publish --no-dependencies -p "$TOKEN"
+          npx @vscode/vsce publish --no-dependencies -p "$TOKEN"

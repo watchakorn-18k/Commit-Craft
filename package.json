@@ -1,5 +1,5 @@
 {
-  "name": "commitcraft",
+  "name": "commit-craft",
   "displayName": "CommitCraft",
   "description": "CommitCraft — Smart Git AI Assistant for Commit Messages, Pre-Commit Code Reviews, PR Descriptions & Branch Naming.",
   "version": "0.1.0",
@@ -13,6 +13,7 @@
   ],
   "keywords": [
     "CommitCraft",
+    "commit-craft",
     "commitcraft",
     "Gemini",
     "OpenAI",
@@ -30,7 +31,7 @@
     "Gitmoji",
     "Auto Commit"
   ],
-  "publisher": "sitoi",
+  "publisher": "porton35",
   "repository": "https://github.com/watchakorn-18k/Commit-Craft",
   "icon": "images/logo.png",
   "activationEvents": [
@@ -483,9 +484,9 @@
     "compile": "webpack",
     "compile-tests": "tsc -p . --outDir out",
     "lint": "eslint src",
-    "package": "vsce package --no-dependencies",
+    "package": "npx @vscode/vsce package --no-dependencies",
     "pretest": "npm run compile-tests && npm run compile && npm run lint",
-    "publish": "vsce publish --no-dependencies",
+    "publish": "npx @vscode/vsce publish --no-dependencies",
     "test": "node ./out/test/runTest.js",
     "vscode:prepublish": "npm run build",
     "watch": "webpack --watch",
