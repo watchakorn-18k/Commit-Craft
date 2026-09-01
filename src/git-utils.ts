@@ -800,5 +800,80 @@ export async function gitBisectReset(repo: any): Promise<void> {
   await git.raw(['bisect', 'reset']).catch(() => null);
 }
 
+/**
+ * Get list of incoming commits that the base branch has but current branch does not
+ */
+export async function getIncomingCommits(
+  repo: any,
+  baseBranch: string
+): Promise<Array<{ hash: string; message: string; author: string }>> {
+  try {
+    const rootPath =
+      repo?.rootUri?.fsPath || vscode.workspace.workspaceFolders?.[0].uri.fsPath;
+    if (!rootPath) {
+      return [];
+    }
+    const git = simpleGit(rootPath);
+    const log = await git.log({ from: 'HEAD', to: baseBranch, maxCount: 20 });
+    return log.all.map((c) => ({
+      hash: c.hash.substring(0, 7),
+      message: c.message,
+      author: c.author_name
+    }));
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Sync branch using Rebase or Merge
+ */
+export async function gitSyncBranch(
+  repo: any,
+  baseBranch: string,
+  strategy: 'rebase' | 'merge' = 'rebase'
+): Promise<{ success: boolean; conflict: boolean; error?: string }> {
+  try {
+    const rootPath =
+      repo?.rootUri?.fsPath || vscode.workspace.workspaceFolders?.[0].uri.fsPath;
+    if (!rootPath) {
+      throw new Error('No workspace folder found');
+    }
+    const git = simpleGit(rootPath);
+
+    // Fetch latest remote first if baseBranch is remote ref
+    if (baseBranch.startsWith('origin/')) {
+      await git.fetch().catch(() => null);
+    }
+
+    if (strategy === 'rebase') {
+      try {
+        await git.rebase([baseBranch]);
+        return { success: true, conflict: false };
+      } catch (err: any) {
+        const status = await git.status().catch(() => null);
+        if (status?.conflicted && status.conflicted.length > 0) {
+          return { success: false, conflict: true, error: 'Rebase conflict detected' };
+        }
+        throw err;
+      }
+    } else {
+      try {
+        await git.merge([baseBranch]);
+        return { success: true, conflict: false };
+      } catch (err: any) {
+        const status = await git.status().catch(() => null);
+        if (status?.conflicted && status.conflicted.length > 0) {
+          return { success: false, conflict: true, error: 'Merge conflict detected' };
+        }
+        throw err;
+      }
+    }
+  } catch (err: any) {
+    return { success: false, conflict: false, error: err?.message || String(err) };
+  }
+}
+
+
 
 

@@ -11,6 +11,7 @@ import { translateCommitMessage } from './translate-utils';
 import { cleanGhostBranches } from './branch-cleaner';
 import { summarizeSquashCommits } from './squash-utils';
 import { runGitBisectAssistant } from './bisect-assistant';
+import { smartSyncBranch } from './sync-utils';
 import { GitStatsDashboardPanel } from './stats-dashboard-view';
 import {
   ConfigKeys,
@@ -134,6 +135,14 @@ export class CommandManager {
     this.registerCommand('commitcraft.draftRelease', suggestReleaseTag);
     this.registerCommand('commit-craft-ai.draftRelease', suggestReleaseTag);
     this.registerCommand('ai-commit.draftRelease', suggestReleaseTag);
+
+    // 6.11. Smart Branch Sync & Rebase Assistant
+    const runSync = async (arg?: any) => {
+      await smartSyncBranch(arg);
+    };
+    this.registerCommand('commitcraft.syncBranch', runSync);
+    this.registerCommand('commit-craft-ai.syncBranch', runSync);
+    this.registerCommand('ai-commit.syncBranch', runSync);
 
     // 7. Quick Setup Wizard
     const runSetup = async () => {

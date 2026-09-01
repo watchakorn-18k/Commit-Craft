@@ -155,6 +155,11 @@
         "title": "CommitCraft: ตามล่าหาจุดเกิดบั๊ก (AI Git Bisect Bug Tracker)"
       },
       {
+        "command": "commitcraft.syncBranch",
+        "icon": "$(git-pull-request-go-to-changes)",
+        "title": "CommitCraft: Sync & Rebase กับ Base Branch (Sync Branch)"
+      },
+      {
         "command": "commitcraft.openDashboard",
         "icon": "$(pie-chart)",
         "title": "CommitCraft: เปิดแดชบอร์ดกราฟวงกลม & สถิติ (Visual Dashboard)"

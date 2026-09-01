@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { getRepo } from './git-utils';
 import { getRepoGitStats, GitStatsSummary } from './git-stats';
+import { smartSyncBranch } from './sync-utils';
 import { ConfigKeys, ConfigurationManager } from './config';
 
 /**
@@ -60,6 +61,10 @@ export class GitStatsWebviewViewProvider implements vscode.WebviewViewProvider {
           break;
         case 'openFullDashboard':
           vscode.commands.executeCommand('commitcraft.openDashboard');
+          break;
+        case 'syncBranch':
+          await smartSyncBranch(undefined, data.baseBranch);
+          await this.update();
           break;
       }
     }, null, this._disposables);
@@ -243,7 +248,7 @@ export class GitStatsWebviewViewProvider implements vscode.WebviewViewProvider {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 4px 8px;
+      padding: 5px 8px;
       border-radius: 4px;
       font-size: 11px;
       margin-bottom: 12px;
@@ -263,6 +268,24 @@ export class GitStatsWebviewViewProvider implements vscode.WebviewViewProvider {
       background: rgba(239, 68, 68, 0.12);
       color: #f87171;
       border: 1px solid rgba(239, 68, 68, 0.25);
+    }
+    .btn-rebase-tag {
+      background: #ef4444;
+      color: #ffffff;
+      border: none;
+      border-radius: 3px;
+      padding: 2px 6px;
+      font-size: 10px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    }
+    .btn-rebase-tag:hover {
+      opacity: 0.88;
+      transform: scale(1.02);
     }
     .chart-container {
       display: flex;
@@ -415,10 +438,14 @@ export class GitStatsWebviewViewProvider implements vscode.WebviewViewProvider {
     </div>
   </div>
 
-  <!-- Branch Divergence Meter Banner -->
+  <!-- Branch Divergence Meter Banner with Interactive Rebase Button -->
   <div class="divergence-banner ${divBadgeClass}">
     <span>${divBadgeText}</span>
-    <span>${div.behind > 0 ? (isThai ? 'ควร Rebase' : 'Sync needed') : 'OK'}</span>
+    ${div.behind > 0 ? `
+      <button class="btn-rebase-tag" title="${isThai ? 'คลิกเพื่อ Sync / Rebase อัตโนมัติ' : 'Click to Sync / Rebase'}" onclick="vscode.postMessage({ command: 'syncBranch', baseBranch: '${div.baseBranch}' })">
+        ⚡ ${isThai ? 'Rebase' : 'Rebase'}
+      </button>
+    ` : `<span style="font-size:10px; opacity:0.8;">OK</span>`}
   </div>
 
   <!-- SVG Donut Chart -->

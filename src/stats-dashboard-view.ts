@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { getRepo } from './git-utils';
 import { getRepoGitStats, GitStatsSummary } from './git-stats';
+import { smartSyncBranch } from './sync-utils';
 import { ConfigKeys, ConfigurationManager } from './config';
 
 /**
@@ -57,6 +58,10 @@ export class GitStatsDashboardPanel {
               await vscode.env.clipboard.writeText(message.text);
               vscode.window.showInformationMessage('CommitCraft: Standup summary copied to clipboard!');
             }
+            break;
+          case 'syncBranch':
+            await smartSyncBranch(undefined, message.baseBranch);
+            await this.update();
             break;
           case 'openSettings':
             vscode.commands.executeCommand('commitcraft.openSettings');
@@ -229,6 +234,23 @@ export class GitStatsDashboardPanel {
       background: var(--vscode-button-secondaryBackground);
       color: var(--vscode-button-secondaryForeground);
       margin-right: 8px;
+    }
+    .btn-rebase {
+      background: #ef4444;
+      color: #ffffff;
+      margin-top: 10px;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      border-radius: 5px;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-rebase:hover {
+      opacity: 0.9;
     }
     .grid {
       display: grid;
@@ -428,7 +450,7 @@ export class GitStatsDashboardPanel {
     </div>` : ''}
   </div>
 
-  <!-- Branch Divergence Meter Card -->
+  <!-- Branch Divergence Meter Card with Interactive Rebase / Sync Button -->
   <div class="divergence-box">
     <div>
       <div class="card-label">${svgCompass} ${isThai ? 'Branch Divergence Meter (วัดระยะห่างกับ Base Branch)' : 'Branch Divergence Meter'}</div>
@@ -438,6 +460,12 @@ export class GitStatsDashboardPanel {
       <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">
         ${div.behind > 0 ? (isThai ? '⚠️ แนะนำให้ Rebase หรือ Merge เพื่อป้องกัน Conflict ใหญ่' : '⚠️ Pull or Rebase recommended to avoid merge conflicts') : (isThai ? 'พร้อมสำหรับการ Push หรือสร้าง Pull Request' : 'Ready to push or create Pull Request')}
       </div>
+      ${div.behind > 0 ? `
+      <div>
+        <button class="btn-rebase" onclick="vscode.postMessage({ command: 'syncBranch', baseBranch: '${div.baseBranch}' })">
+          ⚡ ${isThai ? `Sync / Rebase กับ ${div.baseBranch} ทันที` : `Sync / Rebase with ${div.baseBranch} Now`}
+        </button>
+      </div>` : ''}
     </div>
     <div class="divergence-gauge">
       <div class="gauge-item">

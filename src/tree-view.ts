@@ -265,6 +265,19 @@ export class CommitCraftTreeDataProvider
           }
         ),
         new CommitCraftTreeItem(
+          isThai ? 'Sync & Rebase กับ Base Branch (Sync Branch)' : 'Sync & Rebase with Base Branch',
+          vscode.TreeItemCollapsibleState.None,
+          {
+            description: isThai ? 'Rebase / Merge' : 'Rebase / Merge',
+            tooltip: isThai ? 'Sync อัปเดต Branch ปัจจุบันให้ทัน main/master ด้วย Rebase หรือ Merge พร้อม AI จัดการ Conflict' : 'Intelligently sync active branch with base branch using Rebase or Merge',
+            iconPath: new vscode.ThemeIcon('git-pull-request-go-to-changes'),
+            command: {
+              command: 'commitcraft.syncBranch',
+              title: 'Sync Branch'
+            }
+          }
+        ),
+        new CommitCraftTreeItem(
           isThai ? 'สร้างคำอธิบาย Pull Request (PR Description)' : 'Generate PR Description',
           vscode.TreeItemCollapsibleState.None,
           {
