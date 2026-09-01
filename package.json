@@ -105,6 +105,11 @@
         "title": "CommitCraft: สร้าง/อัปเดต CHANGELOG.md"
       },
       {
+        "command": "commitcraft.explainCommit",
+        "icon": "$(book)",
+        "title": "CommitCraft: อธิบาย Commit นี้ (Explain Commit)"
+      },
+      {
         "command": "commitcraft.quickMenu",
         "icon": "$(zap)",
         "title": "CommitCraft: เมนูด่วน (Quick Action Hub)"
@@ -216,6 +221,12 @@
           "command": "commitcraft.openSettings",
           "when": "view == commitcraft.scmView || view == commitcraft.sidebarView",
           "group": "navigation@2"
+        }
+      ],
+      "timeline/item/context": [
+        {
+          "command": "commitcraft.explainCommit",
+          "group": "1_commitcraft"
         }
       ]
     },

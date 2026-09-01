@@ -250,3 +250,47 @@ Example output:
   ];
 };
 
+/**
+ * Builds prompt for explaining a specific commit in Git history
+ */
+export const getExplainCommitPrompt = (
+  commitMessage: string,
+  author: string,
+  date: string,
+  diff: string,
+  language: string = 'English'
+) => {
+  return [
+    {
+      role: 'system',
+      content: `You are a senior software architect and code reviewer.
+Explain the following Git commit clearly, accurately, and concisely.
+
+Language: ${language}.
+Rules: Strictly NO emojis, icons, or decorative fluff. Senior-level professional engineering tone.
+
+Format your explanation in clean Markdown:
+## Commit Overview
+- **Message**: ${commitMessage}
+- **Author**: ${author} | **Date**: ${date}
+
+### 1. Purpose & Motivation (จุดประสงค์หลัก)
+[Explain WHY this commit was made and what problem it solves in 2-3 clear sentences]
+
+### 2. Key Code Changes (จุดเปลี่ยนแปลงสำคัญ)
+- [Bullet points explaining specific functions, components, or files modified and how they work]
+
+### 3. Architecture & System Impact (ผลกระทบต่อระบบ)
+- [Explain how this change affects other modules, performance, security, or API contracts]
+
+### 4. Summary & Verdict
+[Concise 1-sentence takeaway summary]
+`
+    },
+    {
+      role: 'user',
+      content: `Commit Diff & Details:\n\n${diff}`
+    }
+  ];
+};
+

@@ -13,6 +13,10 @@ import {
 } from './config';
 import { fetchAvailableOpenAIModels } from './openai-utils';
 import { getVSCodeLMModels, isVSCodeLMAvailable } from './vscode-lm-utils';
+import { getRecentCommits, getCommitDetails, getRepo } from './git-utils';
+import { getExplainCommitPrompt } from './prompts';
+import { AIService } from './ai-service';
+import { ProgressHandler } from './utils';
 import { SettingsPanel } from './settings-view';
 import { Logger } from './logger';
 
@@ -51,6 +55,14 @@ export class CommandManager {
     this.registerCommand('commitcraft.generateChangelog', generateChangelog);
     this.registerCommand('commit-craft-ai.generateChangelog', generateChangelog);
     this.registerCommand('ai-commit.generateChangelog', generateChangelog);
+
+    // 6.1. Explain Commit (Timeline / Git History)
+    const runExplain = async (arg?: any) => {
+      await this.runExplainCommit(arg);
+    };
+    this.registerCommand('commitcraft.explainCommit', runExplain);
+    this.registerCommand('commit-craft-ai.explainCommit', runExplain);
+    this.registerCommand('ai-commit.explainCommit', runExplain);
 
     // 7. Quick Setup Wizard
     const runSetup = async () => {
@@ -192,6 +204,12 @@ export class CommandManager {
             action: async () => vscode.commands.executeCommand('commitcraft.generateChangelog')
           },
           {
+            label: '$(book) อธิบาย Commit นี้ (Commit Explainer)',
+            description: 'AI สรุปเจาะลึก',
+            detail: 'ให้ AI ช่วยวิเคราะห์และอธิบายจุดประสงค์ของ Commit เก่าๆ ในประวัติ Git',
+            action: async () => this.runExplainCommit()
+          },
+          {
             label: '$(sparkle) ตัวช่วยตั้งค่าด่วน (Setup Wizard)',
             description: `ปัจจุบัน: ${provider.name} (${activeModel})`,
             detail: 'เปลี่ยน AI Provider, API key, โมเดล หรือภาษาทีละขั้นตอน',
@@ -248,6 +266,12 @@ export class CommandManager {
             action: async () => vscode.commands.executeCommand('commitcraft.generateChangelog')
           },
           {
+            label: '$(book) Explain Commit (Commit Explainer)',
+            description: 'Deep Dive Analysis',
+            detail: 'Have AI explain motivation, changes, and impact of any commit',
+            action: async () => this.runExplainCommit()
+          },
+          {
             label: '$(sparkle) Quick Setup Wizard',
             description: `Current: ${provider.name} (${activeModel})`,
             detail: 'Change AI Provider, API key, model, or language step-by-step',
@@ -275,6 +299,101 @@ export class CommandManager {
     if (selected?.action) {
       await selected.action();
     }
+  }
+
+  /**
+   * Explain a specific commit from Git history (Timeline, Git Graph, or recent commits picker)
+   */
+  public async runExplainCommit(arg?: any) {
+    const configManager = ConfigurationManager.getInstance();
+    const provider = configManager.getActiveProvider();
+    const isThai = configManager.getConfig<string>(ConfigKeys.DISPLAY_LANGUAGE, 'th') === 'th';
+    const language = configManager.getConfig<string>(ConfigKeys.AI_COMMIT_LANGUAGE, 'Thai');
+
+    let repo: any;
+    try {
+      repo = await getRepo(arg);
+    } catch (err: any) {
+      vscode.window.showErrorMessage(err?.message || 'No Git repository found.');
+      return;
+    }
+
+    let targetHash = '';
+
+    // If invoked from Timeline context menu or command with argument
+    if (typeof arg === 'object' && arg?.id) {
+      targetHash = String(arg.id);
+    } else if (typeof arg === 'string') {
+      targetHash = arg;
+    } else {
+      // Pick from recent commits
+      const recentCommits = await getRecentCommits(repo, 30);
+      if (recentCommits.length === 0) {
+        vscode.window.showInformationMessage(
+          isThai ? 'ไม่พบประวัติ Commit ในคลังเก็บโค้ดนี้' : 'No commit history found in this repository.'
+        );
+        return;
+      }
+
+      const items = recentCommits.map((c) => ({
+        label: `$(git-commit) ${c.hash.substring(0, 7)} — ${c.message}`,
+        description: `${c.author_name} (${new Date(c.date).toLocaleDateString()})`,
+        hash: c.hash,
+        message: c.message
+      }));
+
+      const selected = await vscode.window.showQuickPick(items, {
+        title: isThai ? 'เลือก Commit ที่ต้องการให้ AI อธิบาย' : 'Select a commit to explain',
+        placeHolder: isThai ? 'เลือก Commit จากรายการล่าสุด' : 'Choose from recent commits'
+      });
+
+      if (!selected) {
+        return;
+      }
+      targetHash = selected.hash;
+    }
+
+    if (!targetHash) {
+      return;
+    }
+
+    await ProgressHandler.withProgress(
+      isThai ? `AI กำลังวิเคราะห์และอธิบาย Commit ${targetHash.substring(0, 7)}...` : `Explaining commit ${targetHash.substring(0, 7)}...`,
+      async (progress) => {
+        try {
+          progress.report({ message: 'Fetching commit diff...' });
+          const commitDetails = await getCommitDetails(repo, targetHash);
+          if (commitDetails.error || !commitDetails.diff) {
+            throw new Error(commitDetails.error || 'Failed to retrieve commit diff.');
+          }
+
+          progress.report({ message: `Generating explanation with ${provider.name}...` });
+          const prompt = getExplainCommitPrompt(
+            commitDetails.message,
+            commitDetails.author,
+            commitDetails.date,
+            commitDetails.diff,
+            language
+          );
+
+          const raw = await AIService.query(prompt);
+          if (!raw) {
+            throw new Error('AI returned an empty explanation.');
+          }
+
+          // Open markdown document preview
+          const shortHash = targetHash.substring(0, 7);
+          const doc = await vscode.workspace.openTextDocument({
+            content: raw,
+            language: 'markdown'
+          });
+          await vscode.window.showTextDocument(doc, { preview: true, viewColumn: vscode.ViewColumn.Beside });
+        } catch (err: any) {
+          Logger.error('Explain commit failed:', err);
+          vscode.window.showErrorMessage(`CommitCraft: ${err?.message || err}`);
+        }
+      }
+    );
   }
 
   /**

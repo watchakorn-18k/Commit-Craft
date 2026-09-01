@@ -324,3 +324,69 @@ export async function getCommitsForChangelog(
     return { commits: '', lastTag: null, error: error?.message || String(error) };
   }
 }
+
+/**
+ * Get recent commits list
+ */
+export async function getRecentCommits(
+  repo: any,
+  maxCount: number = 30
+): Promise<Array<{ hash: string; message: string; author_name: string; date: string }>> {
+  try {
+    const rootPath =
+      repo?.rootUri?.fsPath || vscode.workspace.workspaceFolders?.[0].uri.fsPath;
+    if (!rootPath) {
+      return [];
+    }
+    const git = simpleGit(rootPath);
+    const log = await git.log({ maxCount });
+    return log.all.map((c) => ({
+      hash: c.hash,
+      message: c.message,
+      author_name: c.author_name,
+      date: c.date
+    }));
+  } catch (error) {
+    Logger.error('Error fetching recent commits:', error);
+    return [];
+  }
+}
+
+/**
+ * Get commit details and full diff for a given commit hash
+ */
+export async function getCommitDetails(
+  repo: any,
+  commitHash: string
+): Promise<{ diff: string; message: string; author: string; date: string; error?: string | null }> {
+  try {
+    const rootPath =
+      repo?.rootUri?.fsPath || vscode.workspace.workspaceFolders?.[0].uri.fsPath;
+    if (!rootPath) {
+      throw new Error('No workspace folder found');
+    }
+    const git = simpleGit(rootPath);
+    const showOutput = await git.show([commitHash, '--stat', '-p']);
+    const log = await git.log({ maxCount: 1, from: commitHash + '^', to: commitHash }).catch(async () => {
+      return await git.log({ maxCount: 1 });
+    });
+    const commitMeta = log.all.find((c) => c.hash.startsWith(commitHash) || commitHash.startsWith(c.hash)) || log.latest;
+
+    return {
+      diff: filterAndCompressDiff(showOutput, 30000),
+      message: commitMeta?.message || commitHash,
+      author: commitMeta?.author_name || 'Unknown',
+      date: commitMeta?.date || '',
+      error: null
+    };
+  } catch (error: any) {
+    Logger.error(`Error getting commit details for ${commitHash}:`, error);
+    return {
+      diff: '',
+      message: commitHash,
+      author: '',
+      date: '',
+      error: error?.message || String(error)
+    };
+  }
+}

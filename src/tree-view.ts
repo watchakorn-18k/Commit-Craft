@@ -167,6 +167,19 @@ export class CommitCraftTreeDataProvider
               title: 'Generate CHANGELOG.md'
             }
           }
+        ),
+        new CommitCraftTreeItem(
+          isThai ? 'อธิบาย Commit (Commit Explainer)' : 'Explain Commit',
+          vscode.TreeItemCollapsibleState.None,
+          {
+            description: isThai ? 'AI สรุปเจาะลึก' : 'Deep dive',
+            tooltip: isThai ? 'ให้ AI ช่วยสรุปและอธิบายจุดประสงค์ของ Commit เก่าๆ ในประวัติ Git' : 'Have AI explain motivation, changes, and system impact of any commit',
+            iconPath: new vscode.ThemeIcon('book'),
+            command: {
+              command: 'commitcraft.explainCommit',
+              title: 'Explain Commit'
+            }
+          }
         )
       ];
     }
