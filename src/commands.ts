@@ -13,6 +13,7 @@ import {
 } from './config';
 import { fetchAvailableOpenAIModels } from './openai-utils';
 import { getVSCodeLMModels, isVSCodeLMAvailable } from './vscode-lm-utils';
+import { SettingsPanel } from './settings-view';
 import { Logger } from './logger';
 
 export class CommandManager {
@@ -121,15 +122,15 @@ export class CommandManager {
     this.registerCommand('commit-craft-ai.toggleEmoji', runEmoji);
     this.registerCommand('ai-commit.toggleEmoji', runEmoji);
 
-    // 14. Open Settings
+    // 15. Open Settings
     const runSettings = () => {
-      vscode.commands.executeCommand('workbench.action.openSettings', 'CommitCraft');
+      SettingsPanel.createOrShow(this.context.extensionUri);
     };
     this.registerCommand('commitcraft.openSettings', runSettings);
     this.registerCommand('commit-craft-ai.openSettings', runSettings);
     this.registerCommand('ai-commit.openSettings', runSettings);
 
-    // 15. Quick Action Hub / Quick Menu (for 1-click UI without Command Palette)
+    // 16. Quick Action Hub / Quick Menu (for 1-click UI without Command Palette)
     const runMenu = async () => {
       await this.runQuickMenu();
     };
@@ -201,10 +202,10 @@ export class CommandManager {
         action: async () => this.runSwitchProvider()
       },
       {
-        label: '$(gear) Open Settings',
-        description: 'VS Code Settings UI',
-        detail: 'Configure CommitCraft in VS Code Settings page',
-        action: () => vscode.commands.executeCommand('workbench.action.openSettings', 'commitcraft')
+        label: '$(gear) Open Settings Panel',
+        description: 'Interactive UI',
+        detail: 'Open clean, dynamic provider settings panel',
+        action: () => SettingsPanel.createOrShow(this.context.extensionUri)
       }
     ];
 

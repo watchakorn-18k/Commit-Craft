@@ -1,0 +1,618 @@
+import * as vscode from 'vscode';
+import { ConfigKeys, ConfigurationManager, PROVIDERS, SUPPORTED_LANGUAGES, COMMIT_STYLES } from './config';
+import { AIService } from './ai-service';
+import { Logger } from './logger';
+
+export class SettingsPanel {
+  public static currentPanel: SettingsPanel | undefined;
+  private readonly _panel: vscode.WebviewPanel;
+  private readonly _extensionUri: vscode.Uri;
+  private _disposables: vscode.Disposable[] = [];
+  private configManager = ConfigurationManager.getInstance();
+
+  public static createOrShow(extensionUri: vscode.Uri) {
+    const column = vscode.window.activeTextEditor
+      ? vscode.window.activeTextEditor.viewColumn
+      : undefined;
+
+    if (SettingsPanel.currentPanel) {
+      SettingsPanel.currentPanel._panel.reveal(column);
+      SettingsPanel.currentPanel._update();
+      return;
+    }
+
+    const panel = vscode.window.createWebviewPanel(
+      'commitcraftSettings',
+      'CommitCraft — Settings',
+      column || vscode.ViewColumn.One,
+      {
+        enableScripts: true,
+        retainContextWhenHidden: true,
+        localResourceRoots: [vscode.Uri.joinPath(extensionUri, 'images')]
+      }
+    );
+
+    SettingsPanel.currentPanel = new SettingsPanel(panel, extensionUri);
+  }
+
+  private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri) {
+    this._panel = panel;
+    this._extensionUri = extensionUri;
+
+    this._update();
+
+    this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
+
+    this._panel.webview.onDidReceiveMessage(
+      async (message) => {
+        try {
+          switch (message.command) {
+            case 'saveSettings': {
+              const {
+                providerId,
+                apiKey,
+                model,
+                baseUrl,
+                style,
+                language,
+                emoji,
+                autoDetectIssue,
+                autoStage
+              } = message.data;
+
+              await this.configManager.updateConfig(ConfigKeys.AI_PROVIDER, providerId);
+              await this.configManager.updateConfig(ConfigKeys.COMMIT_STYLE, style);
+              await this.configManager.updateConfig(ConfigKeys.AI_COMMIT_LANGUAGE, language);
+              await this.configManager.updateConfig(ConfigKeys.EMOJI_ENABLED, emoji);
+              await this.configManager.updateConfig(ConfigKeys.AUTO_DETECT_ISSUE, autoDetectIssue);
+              await this.configManager.updateConfig(ConfigKeys.AUTO_STAGE, autoStage);
+
+              const provider = PROVIDERS[providerId];
+              if (provider) {
+                if (model) {
+                  await this.configManager.updateConfig(provider.configModel, model);
+                }
+                if (apiKey !== undefined && provider.requiresApiKey) {
+                  await this.configManager.setSecretApiKey(providerId, apiKey.trim());
+                  if (provider.configApiKey) {
+                    await this.configManager.updateConfig(provider.configApiKey, apiKey.trim());
+                  }
+                }
+                if (baseUrl !== undefined && provider.configBaseUrl) {
+                  await this.configManager.updateConfig(provider.configBaseUrl, baseUrl.trim());
+                }
+              }
+
+              vscode.window.showInformationMessage('CommitCraft settings saved successfully!');
+              this._update();
+              break;
+            }
+
+            case 'testConnection': {
+              const { providerId, apiKey, model, baseUrl } = message.data;
+              const provider = PROVIDERS[providerId];
+              if (!provider) {
+                this._panel.webview.postMessage({
+                  command: 'testResult',
+                  success: false,
+                  message: 'Unknown provider'
+                });
+                return;
+              }
+
+              // Temporarily test connection with specified params
+              try {
+                this._panel.webview.postMessage({
+                  command: 'testResult',
+                  loading: true,
+                  message: `Testing connection to ${provider.name}...`
+                });
+
+                // Run a test query
+                const testPrompt = [
+                  { role: 'system', content: 'Respond with exactly "OK"' },
+                  { role: 'user', content: 'Ping' }
+                ];
+                await AIService.query(testPrompt);
+
+                this._panel.webview.postMessage({
+                  command: 'testResult',
+                  success: true,
+                  message: `Connection to ${provider.name} succeeded!`
+                });
+              } catch (err: any) {
+                this._panel.webview.postMessage({
+                  command: 'testResult',
+                  success: false,
+                  message: `Connection failed: ${err?.message || err}`
+                });
+              }
+              break;
+            }
+          }
+        } catch (err: any) {
+          Logger.error('Settings webview error:', err);
+          vscode.window.showErrorMessage(`Failed to update settings: ${err?.message || err}`);
+        }
+      },
+      null,
+      this._disposables
+    );
+  }
+
+  private async _update() {
+    this._panel.title = 'CommitCraft — Settings';
+    this._panel.webview.html = await this._getHtmlForWebview();
+  }
+
+  private async _getHtmlForWebview(): Promise<string> {
+    const activeProvider = this.configManager.getActiveProvider();
+    const providersList = Object.values(PROVIDERS);
+    const commitStyles = COMMIT_STYLES;
+    const languages = SUPPORTED_LANGUAGES;
+
+    const currentStyle = this.configManager.getConfig<string>(ConfigKeys.COMMIT_STYLE, 'conventional');
+    const currentLang = this.configManager.getConfig<string>(ConfigKeys.AI_COMMIT_LANGUAGE, 'English');
+    const emojiEnabled = this.configManager.getConfig<boolean>(ConfigKeys.EMOJI_ENABLED, false);
+    const autoDetectIssue = this.configManager.getConfig<boolean>(ConfigKeys.AUTO_DETECT_ISSUE, true);
+    const autoStage = this.configManager.getConfig<boolean>(ConfigKeys.AUTO_STAGE, false);
+
+    // Fetch config and keys for each provider
+    const providerDataMap: Record<string, any> = {};
+    for (const p of providersList) {
+      const apiKey = (await this.configManager.getEffectiveApiKey(p.id)) || '';
+      const activeModel = this.configManager.getActiveModel(p.id);
+      const baseUrl = p.configBaseUrl ? this.configManager.getConfig<string>(p.configBaseUrl, p.defaultBaseUrl || '') : '';
+      providerDataMap[p.id] = {
+        id: p.id,
+        name: p.name,
+        icon: p.icon,
+        description: p.description,
+        requiresApiKey: p.requiresApiKey,
+        apiKey,
+        activeModel,
+        defaultModel: p.defaultModel,
+        presetModels: p.presetModels,
+        baseUrl,
+        defaultBaseUrl: p.defaultBaseUrl
+      };
+    }
+
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CommitCraft Settings</title>
+  <style>
+    :root {
+      --bg: var(--vscode-editor-background);
+      --fg: var(--vscode-editor-foreground);
+      --card-bg: var(--vscode-sideBar-background);
+      --border: var(--vscode-widget-border, rgba(128, 128, 128, 0.2));
+      --btn-bg: var(--vscode-button-background);
+      --btn-fg: var(--vscode-button-foreground);
+      --btn-hover: var(--vscode-button-hoverBackground);
+      --input-bg: var(--vscode-input-background);
+      --input-fg: var(--vscode-input-foreground);
+      --input-border: var(--vscode-input-border, rgba(128, 128, 128, 0.3));
+      --focus-border: var(--vscode-focusBorder);
+      --badge-bg: var(--vscode-badge-background);
+      --badge-fg: var(--vscode-badge-foreground);
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--fg);
+      font-family: var(--vscode-font-family, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+      font-size: var(--vscode-font-size, 13px);
+      padding: 24px 32px;
+      margin: 0 auto;
+      max-width: 820px;
+      line-height: 1.5;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .header h1 {
+      font-size: 20px;
+      margin: 0;
+      font-weight: 600;
+    }
+
+    .header p {
+      margin: 4px 0 0 0;
+      opacity: 0.8;
+      font-size: 12px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 600;
+      margin-top: 0;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-group:last-child {
+      margin-bottom: 0;
+    }
+
+    label {
+      display: block;
+      font-weight: 500;
+      margin-bottom: 6px;
+    }
+
+    .hint {
+      font-size: 12px;
+      opacity: 0.75;
+      margin-top: 4px;
+    }
+
+    select, input[type="text"], input[type="password"] {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 8px 10px;
+      background: var(--input-bg);
+      color: var(--input-fg);
+      border: 1px solid var(--input-border);
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: inherit;
+      outline: none;
+    }
+
+    select:focus, input:focus {
+      border-color: var(--focus-border);
+    }
+
+    .checkbox-group {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      cursor: pointer;
+      margin-bottom: 12px;
+    }
+
+    .checkbox-group input {
+      margin-top: 3px;
+      cursor: pointer;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    button {
+      padding: 9px 18px;
+      background: var(--btn-bg);
+      color: var(--btn-fg);
+      border: none;
+      border-radius: 4px;
+      font-weight: 500;
+      cursor: pointer;
+      font-size: 13px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    button:hover {
+      background: var(--btn-hover);
+    }
+
+    button.secondary {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--fg);
+    }
+
+    button.secondary:hover {
+      background: rgba(128, 128, 128, 0.1);
+    }
+
+    .status-msg {
+      margin-top: 12px;
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 12px;
+      display: none;
+    }
+
+    .status-msg.success {
+      display: block;
+      background: rgba(46, 160, 67, 0.15);
+      border: 1px solid rgba(46, 160, 67, 0.4);
+      color: #3fb950;
+    }
+
+    .status-msg.error {
+      display: block;
+      background: rgba(248, 81, 73, 0.15);
+      border: 1px solid rgba(248, 81, 73, 0.4);
+      color: #f85149;
+    }
+
+    .status-msg.loading {
+      display: block;
+      background: rgba(88, 166, 255, 0.15);
+      border: 1px solid rgba(88, 166, 255, 0.4);
+      color: #58a6ff;
+    }
+
+    .provider-specific-section {
+      border-top: 1px solid var(--border);
+      margin-top: 16px;
+      padding-top: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <h1>CommitCraft Settings</h1>
+      <p>Clean, Dynamic Configuration — Shows only settings relevant to your active AI provider.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🤖 Active AI Provider</div>
+
+    <div class="form-group">
+      <label for="providerSelect">Select AI Provider</label>
+      <select id="providerSelect" onchange="onProviderChange()">
+        ${providersList
+          .map(
+            (p) =>
+              `<option value="${p.id}" ${p.id === activeProvider.id ? 'selected' : ''}>${p.icon} ${p.name} — ${p.description}</option>`
+          )
+          .join('')}
+      </select>
+      <div class="hint">Selecting a provider dynamically reveals only its required API Key, Base URL, and Model options below.</div>
+    </div>
+
+    <div id="dynamicProviderFields" class="provider-specific-section">
+      <!-- Dynamically filled by JavaScript -->
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🎨 Commit & Output Preferences</div>
+
+    <div class="form-group">
+      <label for="styleSelect">Commit Message Style</label>
+      <select id="styleSelect">
+        ${commitStyles
+          .map(
+            (s) =>
+              `<option value="${s.id}" ${s.id === currentStyle ? 'selected' : ''}>${s.label} (${s.description})</option>`
+          )
+          .join('')}
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="languageSelect">Output Language</label>
+      <select id="languageSelect">
+        ${languages
+          .map(
+            (l) =>
+              `<option value="${l.label}" ${l.label === currentLang ? 'selected' : ''}>${l.label} (${l.description})</option>`
+          )
+          .join('')}
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label class="checkbox-group">
+        <input type="checkbox" id="emojiCheckbox" ${emojiEnabled ? 'checked' : ''} />
+        <div>
+          <strong>Include Gitmoji Emojis</strong>
+          <div class="hint">Prefix commits with Gitmojis (e.g. ✨ feat(auth): add login vs feat(auth): add login)</div>
+        </div>
+      </label>
+
+      <label class="checkbox-group">
+        <input type="checkbox" id="autoDetectIssueCheckbox" ${autoDetectIssue ? 'checked' : ''} />
+        <div>
+          <strong>Auto-Detect Jira / GitHub Issue Tickets</strong>
+          <div class="hint">Automatically extract ticket tags from branch names (e.g. feat/PROJ-123 &rarr; [PROJ-123])</div>
+        </div>
+      </label>
+
+      <label class="checkbox-group">
+        <input type="checkbox" id="autoStageCheckbox" ${autoStage ? 'checked' : ''} />
+        <div>
+          <strong>Auto-Stage All Files</strong>
+          <div class="hint">Automatically stage all modified files without prompting when generating commit messages</div>
+        </div>
+      </label>
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button onclick="saveAllSettings()">💾 Save Settings</button>
+    <button class="secondary" onclick="testCurrentConnection()">⚡ Test Connection</button>
+  </div>
+
+  <div id="testStatus" class="status-msg"></div>
+
+  <script>
+    const vscode = acquireVsCodeApi();
+    const providerData = ${JSON.stringify(providerDataMap)};
+
+    function renderDynamicFields(providerId) {
+      const p = providerData[providerId];
+      if (!p) return;
+
+      const container = document.getElementById('dynamicProviderFields');
+      let html = '';
+
+      if (p.id === 'copilot') {
+        html += \`
+          <div class="form-group">
+            <label>Zero Configuration Required</label>
+            <div class="hint">Powered directly by your active VS Code Language Model / GitHub Copilot subscription. No external API keys needed.</div>
+          </div>
+          <div class="form-group">
+            <label for="modelInput">Copilot Model Family</label>
+            <select id="modelInput">
+              \${p.presetModels.map(m => \`<option value="\${m.label}" \${m.label === p.activeModel ? 'selected' : ''}>\${m.label} (\${m.description})</option>\`).join('')}
+            </select>
+          </div>
+        \`;
+      } else {
+        if (p.requiresApiKey) {
+          html += \`
+            <div class="form-group">
+              <label for="apiKeyInput">\${p.name} API Key</label>
+              <input type="password" id="apiKeyInput" value="\${p.apiKey || ''}" placeholder="Enter \${p.name} API key..." />
+              <div class="hint">Saved securely in VS Code SecretStorage and encrypted locally.</div>
+            </div>
+          \`;
+        }
+
+        if (p.configBaseUrl || p.id === 'ollama' || p.id === 'custom') {
+          html += \`
+            <div class="form-group">
+              <label for="baseUrlInput">\${p.name} Base URL</label>
+              <input type="text" id="baseUrlInput" value="\${p.baseUrl || p.defaultBaseUrl || ''}" placeholder="\${p.defaultBaseUrl || 'http://localhost:11434/v1'}" />
+              <div class="hint">Endpoint endpoint URL for local or custom AI host.</div>
+            </div>
+          \`;
+        }
+
+        html += \`
+          <div class="form-group">
+            <label for="modelInput">Model</label>
+            <select id="modelSelect" onchange="onModelSelectChange()">
+              \${p.presetModels.map(m => \`<option value="\${m.label}" \${m.label === p.activeModel ? 'selected' : ''}>\${m.label} (\${m.description})</option>\`).join('')}
+              <option value="custom" \${!p.presetModels.some(m => m.label === p.activeModel) ? 'selected' : ''}>Custom Model...</option>
+            </select>
+            <input type="text" id="modelCustomInput" value="\${p.activeModel || p.defaultModel}" style="margin-top: 6px; display: \${!p.presetModels.some(m => m.label === p.activeModel) ? 'block' : 'none'};" placeholder="Enter custom model identifier..." />
+          </div>
+        \`;
+      }
+
+      container.innerHTML = html;
+    }
+
+    function onProviderChange() {
+      const providerId = document.getElementById('providerSelect').value;
+      renderDynamicFields(providerId);
+    }
+
+    function onModelSelectChange() {
+      const select = document.getElementById('modelSelect');
+      const customInput = document.getElementById('modelCustomInput');
+      if (select && customInput) {
+        customInput.style.display = select.value === 'custom' ? 'block' : 'none';
+      }
+    }
+
+    function getFormData() {
+      const providerId = document.getElementById('providerSelect').value;
+      const apiKeyEl = document.getElementById('apiKeyInput');
+      const baseUrlEl = document.getElementById('baseUrlInput');
+      const modelSelectEl = document.getElementById('modelSelect');
+      const modelCustomEl = document.getElementById('modelCustomInput');
+
+      let model = '';
+      if (modelSelectEl) {
+        model = modelSelectEl.value === 'custom' ? (modelCustomEl?.value.trim() || '') : modelSelectEl.value;
+      } else {
+        const modelInput = document.getElementById('modelInput');
+        model = modelInput ? modelInput.value : '';
+      }
+
+      return {
+        providerId,
+        apiKey: apiKeyEl ? apiKeyEl.value : '',
+        baseUrl: baseUrlEl ? baseUrlEl.value : '',
+        model,
+        style: document.getElementById('styleSelect').value,
+        language: document.getElementById('languageSelect').value,
+        emoji: document.getElementById('emojiCheckbox').checked,
+        autoDetectIssue: document.getElementById('autoDetectIssueCheckbox').checked,
+        autoStage: document.getElementById('autoStageCheckbox').checked
+      };
+    }
+
+    function saveAllSettings() {
+      const data = getFormData();
+      vscode.postMessage({
+        command: 'saveSettings',
+        data
+      });
+    }
+
+    function testCurrentConnection() {
+      const data = getFormData();
+      const statusEl = document.getElementById('testStatus');
+      statusEl.className = 'status-msg loading';
+      statusEl.textContent = 'Testing AI connection...';
+      vscode.postMessage({
+        command: 'testConnection',
+        data
+      });
+    }
+
+    window.addEventListener('message', event => {
+      const msg = event.data;
+      if (msg.command === 'testResult') {
+        const statusEl = document.getElementById('testStatus');
+        if (msg.loading) {
+          statusEl.className = 'status-msg loading';
+          statusEl.textContent = msg.message;
+        } else if (msg.success) {
+          statusEl.className = 'status-msg success';
+          statusEl.textContent = msg.message;
+        } else {
+          statusEl.className = 'status-msg error';
+          statusEl.textContent = msg.message;
+        }
+      }
+    });
+
+    // Initial render
+    renderDynamicFields(document.getElementById('providerSelect').value);
+  </script>
+</body>
+</html>`;
+  }
+
+  public dispose() {
+    SettingsPanel.currentPanel = undefined;
+    this._panel.dispose();
+    while (this._disposables.length) {
+      const x = this._disposables.pop();
+      if (x) {
+        x.dispose();
+      }
+    }
+  }
+}
