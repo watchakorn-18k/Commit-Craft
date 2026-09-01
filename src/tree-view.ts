@@ -72,14 +72,6 @@ export class CommitCraftTreeDataProvider
     if (!element) {
       return [
         new CommitCraftTreeItem(
-          'Git Insights & Stats',
-          vscode.TreeItemCollapsibleState.Expanded,
-          {
-            iconPath: new vscode.ThemeIcon('graph'),
-            category: 'gitStats'
-          }
-        ),
-        new CommitCraftTreeItem(
           'Commit Generation',
           vscode.TreeItemCollapsibleState.Expanded,
           {
@@ -112,108 +104,6 @@ export class CommitCraftTreeDataProvider
           }
         )
       ];
-    }
-
-    // Category 0: Git Insights & Stats
-    if (element.category === 'gitStats') {
-      const items: CommitCraftTreeItem[] = [];
-
-      items.push(
-        new CommitCraftTreeItem(
-          isThai ? 'เปิดแดชบอร์ดกราฟวงกลม & สถิติ' : 'Open Visual Analytics Dashboard',
-          vscode.TreeItemCollapsibleState.None,
-          {
-            description: 'Donut Chart / Report',
-            tooltip: isThai ? 'เปิดแดชบอร์ดดูกราฟวงกลม สัดส่วน Commit และ Standup Summary' : 'Open visual Donut Chart and repository statistics dashboard',
-            iconPath: new vscode.ThemeIcon('pie-chart'),
-            command: {
-              command: 'commitcraft.openDashboard',
-              title: 'Open Visual Dashboard'
-            }
-          }
-        )
-      );
-
-      let repo: any;
-      try {
-        repo = await getRepo();
-      } catch {
-        // Fallback
-      }
-
-      if (repo) {
-        const stats = await getRepoGitStats(repo, 60);
-        if (stats) {
-          items.push(
-            new CommitCraftTreeItem(
-              isThai ? `Branch ปัจจุบัน: ${stats.currentBranch}` : `Branch: ${stats.currentBranch}`,
-              vscode.TreeItemCollapsibleState.None,
-              {
-                description: `${stats.stagedCount} staged, ${stats.unstagedCount} modified`,
-                tooltip: `Active branch: ${stats.currentBranch}\nStaged files: ${stats.stagedCount}\nUnstaged/Modified: ${stats.unstagedCount}`,
-                iconPath: new vscode.ThemeIcon('git-branch')
-              }
-            ),
-            new CommitCraftTreeItem(
-              `Features (\`feat\`): ${stats.typePercentages.feat}%`,
-              vscode.TreeItemCollapsibleState.None,
-              {
-                description: `${stats.commitTypes.feat} commits`,
-                tooltip: `Features ratio: ${stats.typePercentages.feat}% (${stats.commitTypes.feat} commits)`,
-                iconPath: new vscode.ThemeIcon('sparkle')
-              }
-            ),
-            new CommitCraftTreeItem(
-              `Bug Fixes (\`fix\`): ${stats.typePercentages.fix}%`,
-              vscode.TreeItemCollapsibleState.None,
-              {
-                description: `${stats.commitTypes.fix} commits`,
-                tooltip: `Bug fixes ratio: ${stats.typePercentages.fix}% (${stats.commitTypes.fix} commits)`,
-                iconPath: new vscode.ThemeIcon('bug')
-              }
-            ),
-            new CommitCraftTreeItem(
-              `Refactors (\`refactor\`): ${stats.typePercentages.refactor}%`,
-              vscode.TreeItemCollapsibleState.None,
-              {
-                description: `${stats.commitTypes.refactor} commits`,
-                tooltip: `Refactoring ratio: ${stats.typePercentages.refactor}% (${stats.commitTypes.refactor} commits)`,
-                iconPath: new vscode.ThemeIcon('symbol-event')
-              }
-            ),
-            new CommitCraftTreeItem(
-              `Docs & Chores: ${stats.typePercentages.docs + stats.typePercentages.chore}%`,
-              vscode.TreeItemCollapsibleState.None,
-              {
-                description: `${stats.commitTypes.docs + stats.commitTypes.chore} commits`,
-                tooltip: `Documentation & Chores: ${stats.commitTypes.docs + stats.commitTypes.chore} commits`,
-                iconPath: new vscode.ThemeIcon('notebook')
-              }
-            )
-          );
-
-          if (stats.latestCommit) {
-            items.push(
-              new CommitCraftTreeItem(
-                isThai ? `Commit ล่าสุด: ${stats.latestCommit.hash}` : `Latest: ${stats.latestCommit.hash}`,
-                vscode.TreeItemCollapsibleState.None,
-                {
-                  description: stats.latestCommit.message,
-                  tooltip: `${stats.latestCommit.author} (${stats.latestCommit.date}):\n${stats.latestCommit.message}`,
-                  iconPath: new vscode.ThemeIcon('history'),
-                  command: {
-                    command: 'commitcraft.explainCommit',
-                    title: 'Explain Commit',
-                    arguments: [stats.latestCommit.hash]
-                  }
-                }
-              )
-            );
-          }
-        }
-      }
-
-      return items;
     }
 
     // Category 1: Commit Generation

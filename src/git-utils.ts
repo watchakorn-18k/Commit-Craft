@@ -7,12 +7,18 @@ import { Logger } from './logger';
  * Retrieves the repository associated with the provided argument or active workspace.
  */
 export async function getRepo(arg?: any): Promise<any> {
-  const gitApi = vscode.extensions.getExtension('vscode.git')?.exports.getAPI(1);
-  if (!gitApi) {
-    throw new Error('Git extension not found in VS Code');
+  const gitExtension = vscode.extensions.getExtension('vscode.git');
+  if (gitExtension && !gitExtension.isActive) {
+    try {
+      await gitExtension.activate();
+    } catch {
+      // Ignore activation error
+    }
   }
 
-  if (typeof arg === 'object' && arg?.rootUri) {
+  const gitApi = gitExtension?.exports?.getAPI ? gitExtension.exports.getAPI(1) : null;
+
+  if (typeof arg === 'object' && arg?.rootUri && gitApi) {
     const resourceUri = arg.rootUri;
     try {
       const realResourcePath: string = fs.realpathSync(resourceUri.fsPath);
@@ -27,7 +33,7 @@ export async function getRepo(arg?: any): Promise<any> {
     }
   }
 
-  if (gitApi.repositories.length > 0) {
+  if (gitApi && gitApi.repositories && gitApi.repositories.length > 0) {
     const activeEditor = vscode.window.activeTextEditor;
     if (activeEditor) {
       const activeFilePath = activeEditor.document.uri.fsPath;
@@ -39,6 +45,10 @@ export async function getRepo(arg?: any): Promise<any> {
       }
     }
     return gitApi.repositories[0];
+  }
+
+  if (vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0) {
+    return { rootUri: vscode.workspace.workspaceFolders[0].uri };
   }
 
   throw new Error('No Git repository opened in current workspace');

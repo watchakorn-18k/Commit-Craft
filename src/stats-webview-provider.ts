@@ -9,6 +9,7 @@ import { ConfigKeys, ConfigurationManager } from './config';
 export class GitStatsWebviewViewProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = 'commitcraft.statsView';
   private _view?: vscode.WebviewView;
+  private _disposables: vscode.Disposable[] = [];
 
   constructor(private readonly _extensionUri: vscode.Uri) {}
 
@@ -24,7 +25,27 @@ export class GitStatsWebviewViewProvider implements vscode.WebviewViewProvider {
       localResourceRoots: [this._extensionUri]
     };
 
+    // Update whenever view becomes visible
+    webviewView.onDidChangeVisibility(() => {
+      if (webviewView.visible) {
+        this.update();
+      }
+    }, null, this._disposables);
+
+    // Update when active editor changes
+    vscode.window.onDidChangeActiveTextEditor(() => {
+      if (this._view?.visible) {
+        this.update();
+      }
+    }, null, this._disposables);
+
+    // Initial render & retry after brief delay to ensure Git extension initialization
     this.update();
+    setTimeout(() => {
+      if (this._view?.visible) {
+        this.update();
+      }
+    }, 800);
 
     webviewView.webview.onDidReceiveMessage(async (data) => {
       switch (data.command) {
@@ -41,7 +62,7 @@ export class GitStatsWebviewViewProvider implements vscode.WebviewViewProvider {
           vscode.commands.executeCommand('commitcraft.openDashboard');
           break;
       }
-    });
+    }, null, this._disposables);
   }
 
   public async update() {
@@ -60,15 +81,49 @@ export class GitStatsWebviewViewProvider implements vscode.WebviewViewProvider {
     this._view.webview.html = this._getHtml(stats);
   }
 
+  public dispose() {
+    this._disposables.forEach((d) => d.dispose());
+  }
+
   private _getHtml(stats: GitStatsSummary | null): string {
     const isThai = ConfigurationManager.getInstance().getConfig<string>(ConfigKeys.DISPLAY_LANGUAGE, 'th') === 'th';
+
+    const svgRefresh = `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>`;
+    const svgCopy = `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
+    const svgBranch = `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="3" x2="6" y2="15"></line><circle cx="18" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><path d="M18 9a9 9 0 0 1-9 9"></path></svg>`;
 
     if (!stats) {
       return `<!DOCTYPE html>
       <html>
-      <head><style>body { font-family: var(--vscode-font-family); padding: 12px; font-size: 12px; color: var(--vscode-descriptionForeground); text-align: center; }</style></head>
+      <head>
+        <meta charset="UTF-8">
+        <style>
+          body { font-family: var(--vscode-font-family); padding: 16px; font-size: 12px; color: var(--vscode-descriptionForeground); text-align: center; }
+          .btn-retry {
+            background: var(--vscode-button-background);
+            color: var(--vscode-button-foreground);
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+            font-size: 11px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+          }
+        </style>
+      </head>
       <body>
-        <p>${isThai ? 'ไม่พบคลัง Git ใน Workspace นี้' : 'No active Git repository detected.'}</p>
+        <div>${isThai ? 'กำลังเชื่อมต่อ Git Repository...' : 'Connecting to Git repository...'}</div>
+        <button class="btn-retry" onclick="vscode.postMessage({ command: 'refresh' })">
+          ${svgRefresh} ${isThai ? 'รีเฟรชข้อมูล' : 'Refresh'}
+        </button>
+        <script>
+          const vscode = acquireVsCodeApi();
+          // Auto retry once in case Git extension finished loading
+          setTimeout(() => { vscode.postMessage({ command: 'refresh' }); }, 1200);
+        </script>
       </body></html>`;
     }
 
@@ -104,10 +159,6 @@ export class GitStatsWebviewViewProvider implements vscode.WebviewViewProvider {
 - **Bug Fixes (\`fix\`)**: ${stats.commitTypes.fix} (${stats.typePercentages.fix}%)
 - **Refactoring (\`refactor\`)**: ${stats.commitTypes.refactor} (${stats.typePercentages.refactor}%)
 - **Latest Commit**: \`${stats.latestCommit?.hash || ''}\` - ${stats.latestCommit?.message || ''}`;
-
-    const svgRefresh = `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>`;
-    const svgCopy = `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
-    const svgBranch = `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="3" x2="6" y2="15"></line><circle cx="18" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><path d="M18 9a9 9 0 0 1-9 9"></path></svg>`;
 
     return `<!DOCTYPE html>
 <html lang="en">
