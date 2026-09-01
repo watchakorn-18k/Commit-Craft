@@ -77,79 +77,79 @@
       {
         "command": "commitcraft.generate",
         "icon": "$(git-commit)",
-        "title": "CommitCraft: Generate Commit Message"
+        "title": "CommitCraft: สร้างข้อความ Commit (Generate Commit)"
       },
       {
         "command": "commitcraft.generateCandidates",
         "icon": "$(list-unordered)",
-        "title": "CommitCraft: Generate Multiple Options"
+        "title": "CommitCraft: สร้าง 3 ตัวเลือก Commit (3 Options)"
       },
       {
         "command": "commitcraft.reviewChanges",
         "icon": "$(shield)",
-        "title": "CommitCraft: Pre-Commit Code Review"
+        "title": "CommitCraft: ตรวจทานโค้ดก่อน Commit (Code Review)"
       },
       {
         "command": "commitcraft.generatePR",
         "icon": "$(git-pull-request)",
-        "title": "CommitCraft: Generate PR Description"
+        "title": "CommitCraft: สร้างคำอธิบาย PR (PR Description)"
       },
       {
         "command": "commitcraft.suggestBranch",
         "icon": "$(git-branch)",
-        "title": "CommitCraft: Suggest Branch Name"
+        "title": "CommitCraft: แนะนำชื่อ Branch (Suggest Branch)"
       },
       {
         "command": "commitcraft.generateChangelog",
         "icon": "$(notebook)",
-        "title": "CommitCraft: Generate CHANGELOG.md"
+        "title": "CommitCraft: สร้าง/อัปเดต CHANGELOG.md"
       },
       {
         "command": "commitcraft.quickMenu",
         "icon": "$(zap)",
-        "title": "CommitCraft: Quick Action Hub"
+        "title": "CommitCraft: เมนูด่วน (Quick Action Hub)"
       },
       {
         "command": "commitcraft.switchStyle",
-        "title": "CommitCraft: Switch Commit Style"
+        "title": "CommitCraft: สลับสไตล์ Commit (Switch Style)"
       },
       {
         "command": "commitcraft.quickSetup",
         "icon": "$(sparkle)",
-        "title": "CommitCraft: Quick Setup Wizard"
+        "title": "CommitCraft: ตัวช่วยตั้งค่าด่วน (Setup Wizard)"
       },
       {
         "command": "commitcraft.switchProvider",
-        "title": "CommitCraft: Switch AI Provider"
+        "title": "CommitCraft: สลับผู้ให้บริการ AI (Switch Provider)"
       },
       {
         "command": "commitcraft.selectModel",
-        "title": "CommitCraft: Select Model"
+        "title": "CommitCraft: เลือกรุ่นโมเดล (Select Model)"
       },
       {
         "command": "commitcraft.setApiKey",
-        "title": "CommitCraft: Set API Key"
+        "title": "CommitCraft: ตั้งค่า API Key (Set API Key)"
       },
       {
         "command": "commitcraft.setBaseUrl",
-        "title": "CommitCraft: Set API Base URL"
+        "title": "CommitCraft: ตั้งค่า Base URL (Set Base URL)"
       },
       {
         "command": "commitcraft.switchLanguage",
-        "title": "CommitCraft: Switch Language"
+        "title": "CommitCraft: สลับภาษา (Switch Language)"
       },
       {
         "command": "commitcraft.toggleEmoji",
-        "title": "CommitCraft: Toggle Emojis"
+        "title": "CommitCraft: เปิด/ปิด Emojis"
       },
       {
         "command": "commitcraft.openSettings",
         "icon": "$(gear)",
-        "title": "CommitCraft: Open Settings"
+        "title": "CommitCraft: เปิดหน้าตั้งค่า (Open Settings)"
       },
       {
         "command": "commitcraft.showAvailableModels",
-        "title": "CommitCraft: Show Available OpenAI Models"
+        "title": "CommitCraft: แสดงโมเดล OpenAI ที่พร้อมใช้"
       }
     ],
     "keybindings": [
