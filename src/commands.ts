@@ -255,7 +255,7 @@ export class CommandManager {
     const configManager = ConfigurationManager.getInstance();
     const provider = configManager.getActiveProvider();
     const activeModel = configManager.getActiveModel();
-    const isThai = configManager.getConfig<string>(ConfigKeys.DISPLAY_LANGUAGE, 'th') === 'th';
+    const isThai = configManager.getConfig<string>(ConfigKeys.DISPLAY_LANGUAGE, 'en') === 'th';
 
     const items: (vscode.QuickPickItem & { action?: () => Promise<any> | any })[] = isThai
       ? [
@@ -607,8 +607,8 @@ export class CommandManager {
   public async runExplainCommit(arg?: any) {
     const configManager = ConfigurationManager.getInstance();
     const provider = configManager.getActiveProvider();
-    const isThai = configManager.getConfig<string>(ConfigKeys.DISPLAY_LANGUAGE, 'th') === 'th';
-    const language = configManager.getConfig<string>(ConfigKeys.AI_COMMIT_LANGUAGE, 'Thai');
+    const isThai = configManager.getConfig<string>(ConfigKeys.DISPLAY_LANGUAGE, 'en') === 'th';
+    const language = configManager.getConfig<string>(ConfigKeys.AI_COMMIT_LANGUAGE, 'English');
 
     let repo: any;
     try {

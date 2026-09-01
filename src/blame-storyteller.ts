@@ -12,8 +12,8 @@ import { Logger } from './logger';
 export async function tellLineStory(arg?: any): Promise<void> {
   const configManager = ConfigurationManager.getInstance();
   const provider = configManager.getActiveProvider();
-  const isThai = configManager.getConfig<string>(ConfigKeys.DISPLAY_LANGUAGE, 'th') === 'th';
-  const language = configManager.getConfig<string>(ConfigKeys.AI_COMMIT_LANGUAGE, 'Thai');
+  const isThai = configManager.getConfig<string>(ConfigKeys.DISPLAY_LANGUAGE, 'en') === 'th';
+  const language = configManager.getConfig<string>(ConfigKeys.AI_COMMIT_LANGUAGE, 'English');
 
   const editor = vscode.window.activeTextEditor;
   if (!editor) {

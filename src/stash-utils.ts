@@ -21,7 +21,7 @@ import { Logger } from './logger';
 export async function smartStash(arg?: any): Promise<void> {
   const configManager = ConfigurationManager.getInstance();
   const provider = configManager.getActiveProvider();
-  const isThai = configManager.getConfig<string>(ConfigKeys.DISPLAY_LANGUAGE, 'th') === 'th';
+  const isThai = configManager.getConfig<string>(ConfigKeys.DISPLAY_LANGUAGE, 'en') === 'th';
   const language = configManager.getConfig<string>(ConfigKeys.AI_COMMIT_LANGUAGE, 'English');
 
   let repo: any;
@@ -104,7 +104,7 @@ export async function smartStash(arg?: any): Promise<void> {
  */
 export async function popStash(arg?: any): Promise<void> {
   const configManager = ConfigurationManager.getInstance();
-  const isThai = configManager.getConfig<string>(ConfigKeys.DISPLAY_LANGUAGE, 'th') === 'th';
+  const isThai = configManager.getConfig<string>(ConfigKeys.DISPLAY_LANGUAGE, 'en') === 'th';
 
   try {
     const repo = await getRepo(arg);

@@ -163,8 +163,8 @@ export class SettingsPanel {
     const uiLanguages = UI_DISPLAY_LANGUAGES;
 
     const currentStyle = this.configManager.getConfig<string>(ConfigKeys.COMMIT_STYLE, 'conventional');
-    const currentLang = this.configManager.getConfig<string>(ConfigKeys.AI_COMMIT_LANGUAGE, 'Thai');
-    const currentDisplayLang = this.configManager.getConfig<string>(ConfigKeys.DISPLAY_LANGUAGE, 'th');
+    const currentLang = this.configManager.getConfig<string>(ConfigKeys.AI_COMMIT_LANGUAGE, 'English');
+    const currentDisplayLang = this.configManager.getConfig<string>(ConfigKeys.DISPLAY_LANGUAGE, 'en');
     const autoDetectIssue = this.configManager.getConfig<boolean>(ConfigKeys.AUTO_DETECT_ISSUE, true);
     const autoDetectScope = this.configManager.getConfig<boolean>(ConfigKeys.AUTO_DETECT_SCOPE, true);
     const autoStage = this.configManager.getConfig<boolean>(ConfigKeys.AUTO_STAGE, false);

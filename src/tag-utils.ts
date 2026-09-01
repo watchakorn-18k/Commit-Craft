@@ -13,8 +13,8 @@ import { Logger } from './logger';
 export async function suggestReleaseTag(arg?: any): Promise<void> {
   const configManager = ConfigurationManager.getInstance();
   const provider = configManager.getActiveProvider();
-  const isThai = configManager.getConfig<string>(ConfigKeys.DISPLAY_LANGUAGE, 'th') === 'th';
-  const language = configManager.getConfig<string>(ConfigKeys.AI_COMMIT_LANGUAGE, 'Thai');
+  const isThai = configManager.getConfig<string>(ConfigKeys.DISPLAY_LANGUAGE, 'en') === 'th';
+  const language = configManager.getConfig<string>(ConfigKeys.AI_COMMIT_LANGUAGE, 'English');
 
   let repo: any;
   try {

@@ -12,7 +12,7 @@ import { Logger } from './logger';
 export async function summarizeSquashCommits(arg?: any): Promise<void> {
   const configManager = ConfigurationManager.getInstance();
   const provider = configManager.getActiveProvider();
-  const isThai = configManager.getConfig<string>(ConfigKeys.DISPLAY_LANGUAGE, 'th') === 'th';
+  const isThai = configManager.getConfig<string>(ConfigKeys.DISPLAY_LANGUAGE, 'en') === 'th';
   const language = configManager.getConfig<string>(ConfigKeys.AI_COMMIT_LANGUAGE, 'English');
 
   let repo: any;

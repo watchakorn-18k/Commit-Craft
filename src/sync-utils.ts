@@ -18,7 +18,7 @@ import { Logger } from './logger';
  */
 export async function smartSyncBranch(arg?: any, targetBaseBranch?: string): Promise<void> {
   const configManager = ConfigurationManager.getInstance();
-  const isThai = configManager.getConfig<string>(ConfigKeys.DISPLAY_LANGUAGE, 'th') === 'th';
+  const isThai = configManager.getConfig<string>(ConfigKeys.DISPLAY_LANGUAGE, 'en') === 'th';
 
   let repo: any;
   try {

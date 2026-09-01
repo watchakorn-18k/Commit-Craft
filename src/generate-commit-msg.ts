@@ -158,6 +158,7 @@ export async function generateCommitMsg(arg?: any): Promise<void> {
   }
 
   const additionalContext = scmInputBox.value.trim();
+  const language = configManager.getConfig<string>(ConfigKeys.AI_COMMIT_LANGUAGE, 'English');
 
   return ProgressHandler.withProgress(
     `Generating commit message (${provider.name})...`,
@@ -165,7 +166,7 @@ export async function generateCommitMsg(arg?: any): Promise<void> {
       try {
         progress.report({ message: 'Analyzing git diff...' });
 
-        const sysPrompt = await getMainCommitPrompt({ issueTag, detectedScope });
+        const sysPrompt = await getMainCommitPrompt({ language, issueTag, detectedScope });
         const messages = [...sysPrompt];
 
         if (additionalContext) {
@@ -195,8 +196,8 @@ export async function generateCommitMsg(arg?: any): Promise<void> {
       } catch (err: any) {
         Logger.error(`${provider.name} request failed, falling back to Offline Heuristic mode:`, err);
         const errorMsg = err?.message || String(err);
-        const isThai = configManager.getConfig<string>(ConfigKeys.DISPLAY_LANGUAGE, 'th') === 'th';
-        const language = configManager.getConfig<string>(ConfigKeys.AI_COMMIT_LANGUAGE, 'Thai');
+        const isThai = configManager.getConfig<string>(ConfigKeys.DISPLAY_LANGUAGE, 'en') === 'th';
+        const language = configManager.getConfig<string>(ConfigKeys.AI_COMMIT_LANGUAGE, 'English');
 
         // Automatic Smart Fallback without AI
         const stagedPaths = await getStagedFilePaths(repo);
@@ -226,8 +227,8 @@ export async function generateCommitMsg(arg?: any): Promise<void> {
  */
 export async function generateOfflineCommit(arg?: any): Promise<void> {
   const configManager = ConfigurationManager.getInstance();
-  const isThai = configManager.getConfig<string>(ConfigKeys.DISPLAY_LANGUAGE, 'th') === 'th';
-  const language = configManager.getConfig<string>(ConfigKeys.AI_COMMIT_LANGUAGE, 'Thai');
+  const isThai = configManager.getConfig<string>(ConfigKeys.DISPLAY_LANGUAGE, 'en') === 'th';
+  const language = configManager.getConfig<string>(ConfigKeys.AI_COMMIT_LANGUAGE, 'English');
 
   let repo: any;
   try {

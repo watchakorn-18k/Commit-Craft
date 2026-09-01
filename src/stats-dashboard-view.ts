@@ -97,7 +97,7 @@ export class GitStatsDashboardPanel {
   }
 
   private _getHtmlForWebview(stats: GitStatsSummary | null): string {
-    const isThai = ConfigurationManager.getInstance().getConfig<string>(ConfigKeys.DISPLAY_LANGUAGE, 'th') === 'th';
+    const isThai = ConfigurationManager.getInstance().getConfig<string>(ConfigKeys.DISPLAY_LANGUAGE, 'en') === 'th';
 
     if (!stats) {
       return `<!DOCTYPE html>

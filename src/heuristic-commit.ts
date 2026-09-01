@@ -14,7 +14,7 @@ export interface HeuristicCommitOptions {
  * without requiring any AI connection or external API calls.
  */
 export function generateHeuristicCommitMessage(options: HeuristicCommitOptions): string {
-  const { branchName = '', files = [], diff = '', language = 'Thai' } = options;
+  const { branchName = '', files = [], diff = '', language = 'English' } = options;
   const isThai = language.toLowerCase().includes('thai') || language === 'th';
 
   if (files.length === 0) {

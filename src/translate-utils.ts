@@ -13,7 +13,7 @@ import { Logger } from './logger';
 export async function translateCommitMessage(arg?: any): Promise<void> {
   const configManager = ConfigurationManager.getInstance();
   const provider = configManager.getActiveProvider();
-  const isThai = configManager.getConfig<string>(ConfigKeys.DISPLAY_LANGUAGE, 'th') === 'th';
+  const isThai = configManager.getConfig<string>(ConfigKeys.DISPLAY_LANGUAGE, 'en') === 'th';
   const autoDetectIssue = configManager.getConfig<boolean>(ConfigKeys.AUTO_DETECT_ISSUE, true);
   const autoDetectScope = configManager.getConfig<boolean>(ConfigKeys.AUTO_DETECT_SCOPE, true);
 

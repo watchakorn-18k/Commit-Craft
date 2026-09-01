@@ -67,7 +67,7 @@ export class CommitCraftTreeDataProvider
   }
 
   async getChildren(element?: CommitCraftTreeItem): Promise<CommitCraftTreeItem[]> {
-    const isThai = this.configManager.getConfig<string>(ConfigKeys.DISPLAY_LANGUAGE, 'th') === 'th';
+    const isThai = this.configManager.getConfig<string>(ConfigKeys.DISPLAY_LANGUAGE, 'en') === 'th';
 
     if (!element) {
       return [
@@ -390,7 +390,7 @@ export class CommitCraftTreeDataProvider
       const activeModel = this.configManager.getActiveModel();
       const language = this.configManager.getConfig<string>(
         ConfigKeys.AI_COMMIT_LANGUAGE,
-        'Thai'
+        'English'
       );
       const style = this.configManager.getConfig<string>(
         ConfigKeys.COMMIT_STYLE,
