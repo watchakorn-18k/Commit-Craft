@@ -186,6 +186,8 @@ export async function generateCommitMsg(arg?: any): Promise<void> {
           const finalMsg = cleanCommitMessage(raw);
           scmInputBox.value = finalMsg;
           Logger.info('Generated commit message:\n', finalMsg);
+          // Automatically switch to Source Control tab in VS Code
+          await vscode.commands.executeCommand('workbench.view.scm');
         } else {
           throw new Error('AI returned an empty response.');
         }
@@ -280,6 +282,7 @@ export async function generateMultipleCandidates(arg?: any): Promise<void> {
         if (candidates.length === 0) {
           const fallback = cleanCommitMessage(raw);
           scmInputBox.value = fallback;
+          await vscode.commands.executeCommand('workbench.view.scm');
           return;
         }
 
@@ -301,6 +304,7 @@ export async function generateMultipleCandidates(arg?: any): Promise<void> {
 
         if (selected) {
           scmInputBox.value = selected.fullMessage;
+          await vscode.commands.executeCommand('workbench.view.scm');
         }
       } catch (err: any) {
         Logger.error('Generate multiple candidates failed:', err);

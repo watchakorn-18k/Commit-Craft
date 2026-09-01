@@ -64,25 +64,37 @@ export async function getCurrentBranch(repo: any): Promise<string> {
 
 /**
  * Automatically extracts Issue / Ticket identifier from branch name
- * e.g. "feature/PROJ-123-login" -> "PROJ-123"
- * e.g. "fix/issue-456" -> "#456"
- * e.g. "feat/gh-789-api" -> "#789"
+ * - Jira / Linear / ClickUp: "feature/PROJ-123-login" -> "PROJ-123"
+ * - GitHub / GitLab Issues: "fix/issue-456" -> "#456", "feat/gh-789" -> "#789"
+ * - Azure DevOps: "feat/ab#12345" -> "AB#12345"
  */
 export function extractIssueFromBranch(branchName: string): string | null {
   if (!branchName) {
     return null;
   }
 
-  // Matches Jira-style tickets like PROJ-123, ABC-4567
-  const jiraMatch = branchName.match(/([A-Z]{2,10}-\d+)/i);
+  // 1. Azure DevOps pattern: ab#12345 or ado-12345 or wi-12345
+  const adoMatch = branchName.match(/(?:ab[#_-]|ado[-_]|wi[-_])(\d+)/i);
+  if (adoMatch) {
+    return `AB#${adoMatch[1]}`;
+  }
+
+  // 2. Jira / Linear / ClickUp / Shortcut style: PROJ-123, CORE-4567, ENG-101
+  const jiraMatch = branchName.match(/\b([A-Za-z]{2,10}-\d+)\b/);
   if (jiraMatch) {
     return jiraMatch[1].toUpperCase();
   }
 
-  // Matches GitHub/GitLab issue patterns like issue-123, gh-123, #123
-  const ghMatch = branchName.match(/(?:issue|gh|fix|bug)[-_/]?(\d+)/i);
+  // 3. GitHub / GitLab issue patterns: issue-123, gh-123, gl-123, bug-123, fix-123
+  const ghMatch = branchName.match(/(?:issue|gh|gl|fix|bug)[-_/]?(\d+)/i);
   if (ghMatch) {
     return `#${ghMatch[1]}`;
+  }
+
+  // 4. Standalone hash pattern: feat/#123-login
+  const hashMatch = branchName.match(/#(\d+)/);
+  if (hashMatch) {
+    return `#${hashMatch[1]}`;
   }
 
   return null;
