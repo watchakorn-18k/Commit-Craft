@@ -298,7 +298,7 @@ export class GitStatsDashboardPanel {
 
   <div class="grid">
     <div class="card">
-      <div class="card-label">🌿 ${isThai ? 'กิ่งปัจจุบัน (Branch)' : 'Active Branch'}</div>
+      <div class="card-label">🌿 ${isThai ? 'Branch ปัจจุบัน' : 'Active Branch'}</div>
       <div class="card-value" style="font-size: 18px;">${stats.currentBranch}</div>
       <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">
         ${stats.stagedCount} Staged / ${stats.unstagedCount} Modified

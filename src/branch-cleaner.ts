@@ -23,7 +23,7 @@ export async function cleanGhostBranches(arg?: any): Promise<void> {
   if (mergedBranches.length === 0) {
     vscode.window.showInformationMessage(
       isThai
-        ? 'ยอดเยี่ยม! ไม่พบกิ่ง (Branch) ที่ถูก Merge ค้างไว้ในเครื่อง คลังเก็บโค้ดของคุณสะอาดเรียบร้อย'
+        ? 'ไม่พบ Local Branch ที่ Merge แล้วค้างอยู่ในเครื่อง Workspace สะอาดเรียบร้อย'
         : 'All clean! No merged local branches found in this repository.'
     );
     return;
@@ -31,17 +31,17 @@ export async function cleanGhostBranches(arg?: any): Promise<void> {
 
   const items = mergedBranches.map((b) => ({
     label: `$(git-branch) ${b.name}`,
-    description: b.lastCommit ? `Commit ล่าสุด: ${b.lastCommit}` : 'Merged',
+    description: b.lastCommit ? `Latest: ${b.lastCommit}` : 'Merged',
     picked: true,
     branchName: b.name
   }));
 
   const selected = await vscode.window.showQuickPick(items, {
     title: isThai
-      ? `CommitCraft: พบคลังกิ่งที่ Merge แล้ว ${mergedBranches.length} กิ่ง (Clean Ghost Branches)`
+      ? `CommitCraft: พบ ${mergedBranches.length} Merged Branch ที่สามารถลบได้`
       : `CommitCraft: Found ${mergedBranches.length} Merged Branches to Clean`,
     placeHolder: isThai
-      ? 'เลือกกิ่งที่ต้องการลบทิ้งออกจากเครื่อง (กดเว้นวรรคเพื่อเลือก/ยกเลิก)'
+      ? 'เลือก Branch ที่ต้องการลบออกจากเครื่อง (กดเว้นวรรคเพื่อเลือก/ยกเลิก)'
       : 'Select merged branches to delete locally (Space to toggle)',
     canPickMany: true
   });
@@ -53,13 +53,13 @@ export async function cleanGhostBranches(arg?: any): Promise<void> {
   const branchNames = selected.map((s) => s.branchName);
 
   const confirmMsg = isThai
-    ? `คุณแน่ใจหรือไม่ว่าต้องการลบกิ่งที่เลือก ${branchNames.length} กิ่งนี้ (${branchNames.join(', ')})?`
-    : `Are you sure you want to delete ${branchNames.length} merged branch(es) (${branchNames.join(', ')})?`;
+    ? `คุณแน่ใจหรือไม่ว่าต้องการลบ ${branchNames.length} Branch ที่เลือกนี้?\n(${branchNames.join(', ')})`
+    : `Are you sure you want to delete ${branchNames.length} selected branch(es)?\n(${branchNames.join(', ')})`;
 
-  const btnDelete = isThai ? 'ยืนยันลบกิ่ง' : 'Confirm Delete';
-  const btnCancel = isThai ? 'ยกเลิก' : 'Cancel';
+  const btnDelete = isThai ? 'ยืนยันลบ Branch' : 'Delete Branch(es)';
 
-  const choice = await vscode.window.showWarningMessage(confirmMsg, { modal: true }, btnDelete, btnCancel);
+  // Modal dialog automatically includes Cancel button in VS Code
+  const choice = await vscode.window.showWarningMessage(confirmMsg, { modal: true }, btnDelete);
   if (choice !== btnDelete) {
     return;
   }
@@ -68,7 +68,7 @@ export async function cleanGhostBranches(arg?: any): Promise<void> {
 
   if (result.success.length > 0) {
     const successText = isThai
-      ? `ลบกิ่งที่ Merge แล้วสำเร็จ ${result.success.length} กิ่ง: ${result.success.join(', ')}`
+      ? `ลบ Merged Branch สำเร็จ ${result.success.length} branch: ${result.success.join(', ')}`
       : `Successfully deleted ${result.success.length} merged branch(es): ${result.success.join(', ')}`;
     vscode.window.showInformationMessage(successText);
   }
@@ -77,7 +77,7 @@ export async function cleanGhostBranches(arg?: any): Promise<void> {
     const failedList = result.failed.map((f) => `${f.branch} (${f.error})`).join(', ');
     vscode.window.showErrorMessage(
       isThai
-        ? `ไม่สามารถลบได้บางกิ่ง: ${failedList}`
+        ? `ไม่สามารถลบได้บาง branch: ${failedList}`
         : `Failed to delete some branches: ${failedList}`
     );
   }

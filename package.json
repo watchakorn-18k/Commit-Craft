@@ -152,7 +152,7 @@
       {
         "command": "commitcraft.cleanBranches",
         "icon": "$(trash)",
-        "title": "CommitCraft: ลบกิ่งที่ Merge แล้ว (Clean Ghost Branches)"
+        "title": "CommitCraft: ลบ Branch ที่ Merge แล้ว (Clean Ghost Branches)"
       },
       {
         "command": "commitcraft.squashSummary",

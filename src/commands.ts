@@ -322,9 +322,9 @@ export class CommandManager {
             action: async () => summarizeSquashCommits()
           },
           {
-            label: '$(trash) ลบกิ่งที่ Merge แล้ว (Clean Ghost Branches)',
+            label: '$(trash) ลบ Branch ที่ Merge แล้ว (Clean Ghost Branches)',
             description: 'จัดระเบียบ Repo',
-            detail: 'สแกนหากิ่ง Local Branches ที่ Merge เข้า main/master แล้ว และลบทิ้งใน 1 คลิก',
+            detail: 'สแกนหา Local Branches ที่ Merge เข้า main/master แล้ว และลบทิ้งใน 1 คลิก',
             action: async () => cleanGhostBranches()
           },
           {

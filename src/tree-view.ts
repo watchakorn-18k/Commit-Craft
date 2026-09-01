@@ -146,7 +146,7 @@ export class CommitCraftTreeDataProvider
         if (stats) {
           items.push(
             new CommitCraftTreeItem(
-              isThai ? `กิ่งปัจจุบัน: ${stats.currentBranch}` : `Branch: ${stats.currentBranch}`,
+              isThai ? `Branch ปัจจุบัน: ${stats.currentBranch}` : `Branch: ${stats.currentBranch}`,
               vscode.TreeItemCollapsibleState.None,
               {
                 description: `${stats.stagedCount} staged, ${stats.unstagedCount} modified`,
@@ -388,11 +388,11 @@ export class CommitCraftTreeDataProvider
           }
         ),
         new CommitCraftTreeItem(
-          isThai ? 'ลบกิ่งที่ Merge แล้ว (Clean Ghost Branches)' : 'Clean Merged Branches',
+          isThai ? 'ลบ Branch ที่ Merge แล้ว (Clean Ghost Branches)' : 'Clean Merged Branches',
           vscode.TreeItemCollapsibleState.None,
           {
             description: isThai ? 'จัดระเบียบ Repo' : 'Repo hygiene',
-            tooltip: isThai ? 'สแกนหากิ่ง Local Branches ที่ Merge เข้า main/master แล้ว และลบทิ้งใน 1 คลิก' : 'Scan and delete merged local branches cleanly in 1 click',
+            tooltip: isThai ? 'สแกนหา Local Branches ที่ Merge เข้า main/master แล้ว และลบทิ้งใน 1 คลิก' : 'Scan and delete merged local branches cleanly in 1 click',
             iconPath: new vscode.ThemeIcon('trash'),
             command: {
               command: 'commitcraft.cleanBranches',
