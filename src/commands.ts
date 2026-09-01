@@ -461,19 +461,19 @@ export class CommandManager {
       }
     }
 
-    // Step 3: API Key (if required)
-    if (provider.requiresApiKey) {
+    // Step 3: API Key (if required or custom)
+    if (provider.requiresApiKey || provider.id === 'custom' || provider.configApiKey) {
       const existingKey = await configManager.getEffectiveApiKey(provider.id);
       const maskedKey = existingKey ? `${existingKey.slice(0, 4)}...${existingKey.slice(-4)}` : '';
 
       const enteredKey = await vscode.window.showInputBox({
         title: `CommitCraft Setup (2/4): API Key for ${provider.name}`,
         prompt: existingKey
-          ? `Current key: [${maskedKey}]. Enter a new key or press Enter to keep current.`
-          : `Enter API Key for ${provider.name}`,
+          ? `Current key: [${maskedKey}]. Enter a new key, or press Enter to keep current (Leave empty if not required).`
+          : `Enter API Key for ${provider.name} (Optional if server requires no auth, press Enter to skip)`,
         password: true,
         ignoreFocusOut: true,
-        placeHolder: 'Paste API key here...'
+        placeHolder: 'Paste API key here (Optional)...'
       });
 
       if (enteredKey !== undefined && enteredKey.trim() !== '') {

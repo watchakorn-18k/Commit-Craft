@@ -83,7 +83,7 @@ export class SettingsPanel {
                 if (model) {
                   await this.configManager.updateConfig(provider.configModel, model);
                 }
-                if (apiKey !== undefined && provider.requiresApiKey) {
+                if (apiKey !== undefined && (provider.requiresApiKey || provider.configApiKey || providerId === 'custom' || providerId === 'ollama')) {
                   await this.configManager.setSecretApiKey(providerId, apiKey.trim());
                   if (provider.configApiKey) {
                     await this.configManager.updateConfig(provider.configApiKey, apiKey.trim());
@@ -595,11 +595,14 @@ export class SettingsPanel {
           </div>
         \`;
       } else {
-        if (p.requiresApiKey) {
+        if (p.requiresApiKey || p.configApiKey || p.id === 'custom' || p.id === 'ollama') {
+          const isOptional = !p.requiresApiKey;
+          const optLabel = isOptional ? ' <span style="opacity: 0.65; font-size: 11px; font-weight: normal;">(Optional / เว้นว่างได้ถ้าเซิร์ฟเวอร์ไม่ต้องการ)</span>' : '';
+          const placeholder = isOptional ? 'Optional API key (if your custom server requires authentication)...' : ('Enter ' + p.name + ' API key...');
           html += \`
             <div class="form-group">
-              <label for="apiKeyInput">\${p.name} API Key</label>
-              <input type="password" id="apiKeyInput" value="\${p.apiKey || ''}" placeholder="Enter \${p.name} API key..." />
+              <label for="apiKeyInput">\${p.name} API Key\${optLabel}</label>
+              <input type="password" id="apiKeyInput" value="\${p.apiKey || ''}" placeholder="\${placeholder}" />
               <div class="hint">\${dict.apiKeyHint}</div>
             </div>
           \`;
