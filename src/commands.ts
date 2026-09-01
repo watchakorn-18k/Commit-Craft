@@ -10,6 +10,7 @@ import { suggestReleaseTag } from './tag-utils';
 import { translateCommitMessage } from './translate-utils';
 import { cleanGhostBranches } from './branch-cleaner';
 import { summarizeSquashCommits } from './squash-utils';
+import { GitStatsDashboardPanel } from './stats-dashboard-view';
 import {
   ConfigKeys,
   ConfigurationManager,
@@ -33,6 +34,14 @@ export class CommandManager {
   constructor(private context: vscode.ExtensionContext) {}
 
   registerCommands() {
+    // 0. Visual Git Analytics Dashboard
+    const runDashboard = () => {
+      GitStatsDashboardPanel.createOrShow(this.context.extensionUri);
+    };
+    this.registerCommand('commitcraft.openDashboard', runDashboard);
+    this.registerCommand('commit-craft-ai.openDashboard', runDashboard);
+    this.registerCommand('ai-commit.openDashboard', runDashboard);
+
     // 1. Generate commit message
     this.registerCommand('commitcraft.generate', generateCommitMsg);
     this.registerCommand('commit-craft-ai.generate', generateCommitMsg);
@@ -219,6 +228,16 @@ export class CommandManager {
     const items: (vscode.QuickPickItem & { action?: () => Promise<any> | any })[] = isThai
       ? [
           {
+            label: 'Git Insights & Analytics',
+            kind: vscode.QuickPickItemKind.Separator
+          },
+          {
+            label: '$(pie-chart) เปิดแดชบอร์ดกราฟวงกลม & สถิติ (Visual Dashboard)',
+            description: 'Donut Chart / Report',
+            detail: 'เปิดหน้าต่างแดชบอร์ดดูกราฟวงกลม สัดส่วน Commit และ Standup Summary',
+            action: async () => GitStatsDashboardPanel.createOrShow(this.context.extensionUri)
+          },
+          {
             label: 'Commit Generation',
             kind: vscode.QuickPickItemKind.Separator
           },
@@ -350,6 +369,16 @@ export class CommandManager {
           }
         ]
       : [
+          {
+            label: 'Git Insights & Analytics',
+            kind: vscode.QuickPickItemKind.Separator
+          },
+          {
+            label: '$(pie-chart) Open Visual Analytics Dashboard',
+            description: 'Donut Chart & Reports',
+            detail: 'Open visual Donut Chart and repository statistics dashboard',
+            action: async () => GitStatsDashboardPanel.createOrShow(this.context.extensionUri)
+          },
           {
             label: 'Commit Generation',
             kind: vscode.QuickPickItemKind.Separator
