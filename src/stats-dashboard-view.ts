@@ -5,6 +5,7 @@ import { ConfigKeys, ConfigurationManager } from './config';
 
 /**
  * Visual Webview Dashboard displaying Git statistics, Donut/Pie Chart, and Insights.
+ * Uses clean SVG vector icons (Remix / Lucide style) instead of emojis.
  */
 export class GitStatsDashboardPanel {
   public static currentPanel: GitStatsDashboardPanel | undefined;
@@ -129,7 +130,7 @@ export class GitStatsDashboardPanel {
       return `<circle r="45" cx="50" cy="50" fill="transparent" stroke="${slice.color}" stroke-width="10" stroke-dasharray="${strokeDasharray}" stroke-dashoffset="${strokeDashoffset}" stroke-linecap="round" />`;
     }).join('');
 
-    const standupMarkdown = `### 📊 Daily / Weekly Standup Report
+    const standupMarkdown = `### Git Activity & Standup Summary
 - **Branch**: \`${stats.currentBranch}\`
 - **Total Analyzed Commits**: ${total}
 - **Key Features (\`feat\`)**: ${stats.commitTypes.feat} (${stats.typePercentages.feat}%)
@@ -137,6 +138,21 @@ export class GitStatsDashboardPanel {
 - **Refactoring (\`refactor\`)**: ${stats.commitTypes.refactor} (${stats.typePercentages.refactor}%)
 - **Documentation & Maintenance**: ${stats.commitTypes.docs + stats.commitTypes.chore} commits
 - **Latest Commit**: \`${stats.latestCommit?.hash || ''}\` - ${stats.latestCommit?.message || ''}`;
+
+    // Inline SVG Icons
+    const svgBarChart = `<svg class="icon-svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>`;
+    const svgRefresh = `<svg class="icon-svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>`;
+    const svgCopy = `<svg class="icon-svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
+    const svgBranch = `<svg class="icon-svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="3" x2="6" y2="15"></line><circle cx="18" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><path d="M18 9a9 9 0 0 1-9 9"></path></svg>`;
+    const svgCommit = `<svg class="icon-svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><line x1="1.05" y1="12" x2="7" y2="12"></line><line x1="17.01" y1="12" x2="22.96" y2="12"></line></svg>`;
+    const svgBug = `<svg class="icon-svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="14" x="8" y="6" rx="4"></rect><path d="m19 7-3 2M5 7l3 2M19 19l-3-2M5 19l3-2M20 13h-4M4 13h4M10 4v2M14 4v2"></path></svg>`;
+    const svgUsers = `<svg class="icon-svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>`;
+    const svgPie = `<svg class="icon-svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg>`;
+    const svgActivity = `<svg class="icon-svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>`;
+    const svgSparkle = `<svg class="icon-svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>`;
+    const svgRefactor = `<svg class="icon-svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>`;
+    const svgDoc = `<svg class="icon-svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#06b6d4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>`;
+    const svgWrench = `<svg class="icon-svg" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#8b5cf6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>`;
 
     return `<!DOCTYPE html>
 <html lang="en">
@@ -172,7 +188,11 @@ export class GitStatsDashboardPanel {
       font-weight: 700;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
+    }
+    .icon-svg {
+      vertical-align: middle;
+      display: inline-block;
     }
     .btn {
       background: var(--vscode-button-background);
@@ -183,6 +203,9 @@ export class GitStatsDashboardPanel {
       cursor: pointer;
       font-weight: 500;
       font-size: 13px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
     }
     .btn:hover {
       background: var(--vscode-button-hoverBackground);
@@ -210,7 +233,10 @@ export class GitStatsDashboardPanel {
       text-transform: uppercase;
       letter-spacing: 0.5px;
       color: var(--text-muted);
-      margin-bottom: 6px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
     .card-value {
       font-size: 24px;
@@ -260,8 +286,8 @@ export class GitStatsDashboardPanel {
       height: 8px;
       border-radius: 4px;
       overflow: hidden;
-      margin-top: 4px;
-      margin-bottom: 12px;
+      margin-top: 6px;
+      margin-bottom: 14px;
     }
     .progress-bar-fill {
       height: 100%;
@@ -287,35 +313,39 @@ export class GitStatsDashboardPanel {
 <body>
   <div class="header">
     <div class="title">
-      <span>📊</span>
+      ${svgBarChart}
       <span>${isThai ? 'แดชบอร์ดสรุปสถิติ Git & Conventional Commits' : 'Git Visual Analytics & Insights'}</span>
     </div>
     <div>
-      <button class="btn btn-secondary" onclick="vscode.postMessage({ command: 'refresh' })">🔄 ${isThai ? 'รีเฟรช' : 'Refresh'}</button>
-      <button class="btn" onclick="copyStandup()">📋 ${isThai ? 'คัดลอก Standup Report' : 'Copy Standup Report'}</button>
+      <button class="btn btn-secondary" onclick="vscode.postMessage({ command: 'refresh' })">
+        ${svgRefresh} ${isThai ? 'รีเฟรช' : 'Refresh'}
+      </button>
+      <button class="btn" onclick="copyStandup()">
+        ${svgCopy} ${isThai ? 'คัดลอก Standup Report' : 'Copy Standup Report'}
+      </button>
     </div>
   </div>
 
   <div class="grid">
     <div class="card">
-      <div class="card-label">🌿 ${isThai ? 'Branch ปัจจุบัน' : 'Active Branch'}</div>
+      <div class="card-label">${svgBranch} ${isThai ? 'Branch ปัจจุบัน' : 'Active Branch'}</div>
       <div class="card-value" style="font-size: 18px;">${stats.currentBranch}</div>
       <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">
         ${stats.stagedCount} Staged / ${stats.unstagedCount} Modified
       </div>
     </div>
     <div class="card">
-      <div class="card-label">⚡ ${isThai ? 'Commits ตัวอย่าง' : 'Analyzed Commits'}</div>
+      <div class="card-label">${svgCommit} ${isThai ? 'Commits ตัวอย่าง' : 'Analyzed Commits'}</div>
       <div class="card-value">${total}</div>
       <div style="font-size: 12px; color: #10b981; margin-top: 4px;">${stats.commitTypes.feat} Features added</div>
     </div>
     <div class="card">
-      <div class="card-label">🐛 ${isThai ? 'การแก้บั๊ก (Bug Fixes)' : 'Bug Fix Ratio'}</div>
+      <div class="card-label">${svgBug} ${isThai ? 'การแก้บั๊ก (Bug Fixes)' : 'Bug Fix Ratio'}</div>
       <div class="card-value">${stats.typePercentages.fix}%</div>
       <div style="font-size: 12px; color: #ef4444; margin-top: 4px;">${stats.commitTypes.fix} bug fix commits</div>
     </div>
     <div class="card">
-      <div class="card-label">👥 ${isThai ? 'ผู้ร่วมทำโค้ด (Contributors)' : 'Contributors'}</div>
+      <div class="card-label">${svgUsers} ${isThai ? 'ผู้ร่วมทำโค้ด (Contributors)' : 'Contributors'}</div>
       <div class="card-value">${stats.topContributors.length}</div>
       <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">
         Top: ${stats.topContributors[0]?.name || 'You'} (${stats.topContributors[0]?.count || 0})
@@ -326,7 +356,7 @@ export class GitStatsDashboardPanel {
   <div class="main-section">
     <!-- Donut Chart -->
     <div class="card chart-box">
-      <div class="card-label" style="align-self: flex-start;">🍩 ${isThai ? 'กราฟสัดส่วนประเภท Conventional Commits' : 'Commit Types Distribution'}</div>
+      <div class="card-label" style="align-self: flex-start;">${svgPie} ${isThai ? 'สัดส่วนประเภท Conventional Commits' : 'Commit Types Distribution'}</div>
       <svg class="donut-svg" viewBox="0 0 100 100">
         <circle r="45" cx="50" cy="50" fill="transparent" stroke="rgba(255,255,255,0.05)" stroke-width="10" />
         ${slices}
@@ -343,11 +373,11 @@ export class GitStatsDashboardPanel {
 
     <!-- Breakdown Bars -->
     <div class="card">
-      <div class="card-label">📈 ${isThai ? 'เจาะลึกประเภทงาน (Breakdown)' : 'Engineering Velocity Breakdown'}</div>
+      <div class="card-label">${svgActivity} ${isThai ? 'เจาะลึกประเภทงาน (Breakdown)' : 'Engineering Velocity Breakdown'}</div>
       
       <div>
-        <div style="display:flex; justify-content:space-between; font-size:13px;">
-          <span>✨ Features (\`feat\`)</span>
+        <div style="display:flex; justify-content:space-between; align-items:center; font-size:13px;">
+          <span style="display:inline-flex; align-items:center; gap:6px;">${svgSparkle} Features (\`feat\`)</span>
           <span>${stats.commitTypes.feat} commits (${stats.typePercentages.feat}%)</span>
         </div>
         <div class="progress-bar-bg">
@@ -356,8 +386,8 @@ export class GitStatsDashboardPanel {
       </div>
 
       <div>
-        <div style="display:flex; justify-content:space-between; font-size:13px;">
-          <span>🐛 Bug Fixes (\`fix\`)</span>
+        <div style="display:flex; justify-content:space-between; align-items:center; font-size:13px;">
+          <span style="display:inline-flex; align-items:center; gap:6px;">${svgBug} Bug Fixes (\`fix\`)</span>
           <span>${stats.commitTypes.fix} commits (${stats.typePercentages.fix}%)</span>
         </div>
         <div class="progress-bar-bg">
@@ -366,8 +396,8 @@ export class GitStatsDashboardPanel {
       </div>
 
       <div>
-        <div style="display:flex; justify-content:space-between; font-size:13px;">
-          <span>♻️ Code Refactoring (\`refactor\`)</span>
+        <div style="display:flex; justify-content:space-between; align-items:center; font-size:13px;">
+          <span style="display:inline-flex; align-items:center; gap:6px;">${svgRefactor} Code Refactoring (\`refactor\`)</span>
           <span>${stats.commitTypes.refactor} commits (${stats.typePercentages.refactor}%)</span>
         </div>
         <div class="progress-bar-bg">
@@ -376,8 +406,8 @@ export class GitStatsDashboardPanel {
       </div>
 
       <div>
-        <div style="display:flex; justify-content:space-between; font-size:13px;">
-          <span>📝 Documentation (\`docs\`)</span>
+        <div style="display:flex; justify-content:space-between; align-items:center; font-size:13px;">
+          <span style="display:inline-flex; align-items:center; gap:6px;">${svgDoc} Documentation (\`docs\`)</span>
           <span>${stats.commitTypes.docs} commits (${stats.typePercentages.docs}%)</span>
         </div>
         <div class="progress-bar-bg">
@@ -386,8 +416,8 @@ export class GitStatsDashboardPanel {
       </div>
 
       <div>
-        <div style="display:flex; justify-content:space-between; font-size:13px;">
-          <span>🔧 Chores & Maintenance (\`chore\`)</span>
+        <div style="display:flex; justify-content:space-between; align-items:center; font-size:13px;">
+          <span style="display:inline-flex; align-items:center; gap:6px;">${svgWrench} Chores & Maintenance (\`chore\`)</span>
           <span>${stats.commitTypes.chore} commits (${stats.typePercentages.chore}%)</span>
         </div>
         <div class="progress-bar-bg">
@@ -399,8 +429,8 @@ export class GitStatsDashboardPanel {
 
   <div class="standup-box">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
-      <div class="card-label">📝 ${isThai ? 'ตัวอย่าง Daily / Sprint Standup Summary (พร้อมส่ง)' : 'Sprint / Standup Summary Markdown'}</div>
-      <button class="btn" style="padding: 4px 10px; font-size: 12px;" onclick="copyStandup()">📋 Copy</button>
+      <div class="card-label">${svgDoc} ${isThai ? 'ตัวอย่าง Daily / Sprint Standup Summary (พร้อมส่ง)' : 'Sprint / Standup Summary Markdown'}</div>
+      <button class="btn" style="padding: 4px 10px; font-size: 12px;" onclick="copyStandup()">${svgCopy} Copy</button>
     </div>
     <pre id="standupText">${standupMarkdown}</pre>
   </div>
