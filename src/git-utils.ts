@@ -168,6 +168,25 @@ export async function getDiffStaged(
 }
 
 /**
+ * Retrieves the list of staged file paths from Git repository
+ */
+export async function getStagedFilePaths(repo: any): Promise<string[]> {
+  try {
+    const rootPath =
+      repo?.rootUri?.fsPath || vscode.workspace.workspaceFolders?.[0].uri.fsPath;
+    if (!rootPath) {
+      return [];
+    }
+    const git = simpleGit(rootPath);
+    const status = await git.status();
+    return status.staged || [];
+  } catch (error) {
+    Logger.error('Error fetching staged file paths:', error);
+    return [];
+  }
+}
+
+/**
  * Get diff for the current branch compared to base branch (e.g. main/master) for PR creation
  */
 export async function getBranchDiff(

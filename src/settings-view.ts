@@ -64,6 +64,7 @@ export class SettingsPanel {
                 commitLanguage,
                 displayLanguage,
                 autoDetectIssue,
+                autoDetectScope,
                 autoStage
               } = message.data;
 
@@ -72,6 +73,7 @@ export class SettingsPanel {
               await this.configManager.updateConfig(ConfigKeys.AI_COMMIT_LANGUAGE, commitLanguage);
               await this.configManager.updateConfig(ConfigKeys.DISPLAY_LANGUAGE, displayLanguage);
               await this.configManager.updateConfig(ConfigKeys.AUTO_DETECT_ISSUE, autoDetectIssue);
+              await this.configManager.updateConfig(ConfigKeys.AUTO_DETECT_SCOPE, autoDetectScope);
               await this.configManager.updateConfig(ConfigKeys.AUTO_STAGE, autoStage);
               // Force emoji to false for clean professional standards
               await this.configManager.updateConfig(ConfigKeys.EMOJI_ENABLED, false);
@@ -164,6 +166,7 @@ export class SettingsPanel {
     const currentLang = this.configManager.getConfig<string>(ConfigKeys.AI_COMMIT_LANGUAGE, 'Thai');
     const currentDisplayLang = this.configManager.getConfig<string>(ConfigKeys.DISPLAY_LANGUAGE, 'th');
     const autoDetectIssue = this.configManager.getConfig<boolean>(ConfigKeys.AUTO_DETECT_ISSUE, true);
+    const autoDetectScope = this.configManager.getConfig<boolean>(ConfigKeys.AUTO_DETECT_SCOPE, true);
     const autoStage = this.configManager.getConfig<boolean>(ConfigKeys.AUTO_STAGE, false);
 
     // Fetch config and keys for each provider
@@ -462,6 +465,14 @@ export class SettingsPanel {
 
     <div class="form-group">
       <label class="checkbox-group">
+        <input type="checkbox" id="autoDetectScopeCheckbox" ${autoDetectScope ? 'checked' : ''} />
+        <div>
+          <strong id="lblAutoDetectScope">Monorepo Smart Auto-Scoping</strong>
+          <div class="hint" id="hintAutoDetectScope">Automatically detect app/package folders from modified files and set as scope (e.g. apps/web/... &rarr; feat(web): ...)</div>
+        </div>
+      </label>
+
+      <label class="checkbox-group">
         <input type="checkbox" id="autoDetectIssueCheckbox" ${autoDetectIssue ? 'checked' : ''} />
         <div>
           <strong id="lblAutoDetect">Auto-Detect Jira / GitHub Issue Tickets</strong>
@@ -504,6 +515,8 @@ export class SettingsPanel {
         hintProvider: 'Selecting a provider dynamically reveals only its required API Key, Base URL, and Model options below.',
         cardFormatTitle: 'Commit Format & Automation',
         lblStyle: 'Commit Message Style',
+        lblAutoDetectScope: 'Monorepo Smart Auto-Scoping',
+        hintAutoDetectScope: 'Automatically detect app/package folders from modified files and set as scope (e.g. apps/web/... &rarr; feat(web): ...)',
         lblAutoDetect: 'Auto-Detect Jira / GitHub Issue Tickets',
         hintAutoDetect: 'Automatically extract ticket tags from branch names (e.g. feat/PROJ-123 &rarr; [PROJ-123])',
         lblAutoStage: 'Auto-Stage All Files',
@@ -528,6 +541,8 @@ export class SettingsPanel {
         hintProvider: 'เมื่อเลือก Provider ระบบจะแสดงเฉพาะช่องกรอก API Key และเลือกรุ่น Model ของผู้ให้บริการนั้นๆ ทันที',
         cardFormatTitle: 'รูปแบบ Commit และระบบอัตโนมัติ',
         lblStyle: 'รูปแบบของ Commit Message',
+        lblAutoDetectScope: 'ตรวจจับ Monorepo & Scope อัตโนมัติ (Smart Auto-Scoping)',
+        hintAutoDetectScope: 'วิเคราะห์โฟลเดอร์ของไฟล์ที่ถูกแก้ไข และใส่ Scope ให้ทันที (เช่น apps/web/... &rarr; feat(web): ...)',
         lblAutoDetect: 'ตรวจจับหมายเลข Ticket (Jira / GitHub Issues) อัตโนมัติ',
         hintAutoDetect: 'ดึงชื่อ Ticket จากชื่อ Git Branch มาใส่ข้างหน้าข้อความให้อัตโนมัติ (เช่น feat/PROJ-123 &rarr; [PROJ-123])',
         lblAutoStage: 'Auto-Stage ไฟล์ทั้งหมดอัตโนมัติ',
@@ -651,6 +666,7 @@ export class SettingsPanel {
         style: document.getElementById('styleSelect').value,
         commitLanguage: document.getElementById('languageSelect').value,
         displayLanguage: document.getElementById('displayLanguageSelect').value,
+        autoDetectScope: document.getElementById('autoDetectScopeCheckbox').checked,
         autoDetectIssue: document.getElementById('autoDetectIssueCheckbox').checked,
         autoStage: document.getElementById('autoStageCheckbox').checked
       };

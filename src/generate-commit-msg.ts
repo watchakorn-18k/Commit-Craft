@@ -5,10 +5,12 @@ import {
   extractIssueFromBranch,
   getCurrentBranch,
   getDiffStaged,
+  getStagedFilePaths,
   getRepo,
   hasUnstagedChanges,
   stageAllChanges
 } from './git-utils';
+import { detectMonorepoScope } from './scope-detector';
 import { getMainCommitPrompt, getMultipleCandidatesPrompt } from './prompts';
 import { ProgressHandler } from './utils';
 import { Logger } from './logger';
@@ -50,17 +52,25 @@ async function prepareDiff(repo: any): Promise<string | null> {
       let shouldStage = autoStage;
 
       if (!shouldStage) {
+        const isThai = configManager.getConfig<string>(ConfigKeys.DISPLAY_LANGUAGE, 'th') === 'th';
+        const msg = isThai
+          ? 'ไม่พบไฟล์ที่ Stage ไว้ คุณต้องการ Stage ไฟล์ที่แก้ไขทั้งหมดแล้วสร้าง Commit ทันทีหรือไม่?'
+          : 'No staged changes found. Would you like to stage all changes and generate a commit message?';
+        const optStage = isThai ? 'Stage ทั้งหมด & สร้างข้อความ' : 'Stage All & Generate';
+        const optAlways = isThai ? 'Stage อัตโนมัติเสมอ' : 'Always Stage Automatically';
+        const optCancel = isThai ? 'ยกเลิก' : 'Cancel';
+
         const choice = await vscode.window.showInformationMessage(
-          'No staged changes found. Would you like to stage all changes and generate a commit message?',
-          'Stage All & Generate',
-          'Always Stage Automatically',
-          'Cancel'
+          msg,
+          optStage,
+          optAlways,
+          optCancel
         );
 
-        if (choice === 'Always Stage Automatically') {
+        if (choice === optAlways || choice === 'Always Stage Automatically') {
           await configManager.updateConfig(ConfigKeys.AUTO_STAGE, true);
           shouldStage = true;
-        } else if (choice === 'Stage All & Generate') {
+        } else if (choice === optStage || choice === 'Stage All & Generate') {
           shouldStage = true;
         }
       }
@@ -99,11 +109,11 @@ export async function generateCommitMsg(arg?: any): Promise<void> {
     );
 
     if (choice === 'Quick Setup Wizard') {
-      await vscode.commands.executeCommand('ai-commit.quickSetup');
+      await vscode.commands.executeCommand('commitcraft.quickSetup');
     } else if (choice === 'Enter API Key') {
-      await vscode.commands.executeCommand('ai-commit.setApiKey', provider.id);
+      await vscode.commands.executeCommand('commitcraft.setApiKey', provider.id);
     } else if (choice === 'Open Settings') {
-      await vscode.commands.executeCommand('workbench.action.openSettings', 'ai-commit');
+      await vscode.commands.executeCommand('commitcraft.openSettings');
     }
     return;
   }
@@ -135,6 +145,17 @@ export async function generateCommitMsg(arg?: any): Promise<void> {
     issueTag = extractIssueFromBranch(branchName);
   }
 
+  // Check Monorepo / Module Scope auto-detection
+  let detectedScope: string | null = null;
+  const autoDetectScope = configManager.getConfig<boolean>(ConfigKeys.AUTO_DETECT_SCOPE, true);
+  if (autoDetectScope) {
+    const stagedPaths = await getStagedFilePaths(repo);
+    detectedScope = detectMonorepoScope(stagedPaths);
+    if (detectedScope) {
+      Logger.info(`Monorepo Scope detected: ${detectedScope}`);
+    }
+  }
+
   const additionalContext = scmInputBox.value.trim();
 
   return ProgressHandler.withProgress(
@@ -143,7 +164,7 @@ export async function generateCommitMsg(arg?: any): Promise<void> {
       try {
         progress.report({ message: 'Analyzing git diff...' });
 
-        const sysPrompt = await getMainCommitPrompt({ issueTag });
+        const sysPrompt = await getMainCommitPrompt({ issueTag, detectedScope });
         const messages = [...sysPrompt];
 
         if (additionalContext) {
@@ -184,7 +205,7 @@ export async function generateCommitMsg(arg?: any): Promise<void> {
         } else if (retryChoice === 'Quick Setup') {
           await vscode.commands.executeCommand('commitcraft.quickSetup');
         } else if (retryChoice === 'Settings') {
-          await vscode.commands.executeCommand('workbench.action.openSettings', 'commitcraft');
+          await vscode.commands.executeCommand('commitcraft.openSettings');
         }
       }
     }
@@ -224,8 +245,14 @@ export async function generateMultipleCandidates(arg?: any): Promise<void> {
     issueTag = extractIssueFromBranch(branchName);
   }
 
+  let detectedScope: string | null = null;
+  const autoDetectScope = configManager.getConfig<boolean>(ConfigKeys.AUTO_DETECT_SCOPE, true);
+  if (autoDetectScope) {
+    const stagedPaths = await getStagedFilePaths(repo);
+    detectedScope = detectMonorepoScope(stagedPaths);
+  }
+
   const language = configManager.getConfig<string>(ConfigKeys.AI_COMMIT_LANGUAGE, 'English');
-  const emojiEnabled = configManager.getConfig<boolean>(ConfigKeys.EMOJI_ENABLED, true);
 
   return ProgressHandler.withProgress(
     `Generating 3 Commit Candidates (${provider.name})...`,
@@ -234,8 +261,8 @@ export async function generateMultipleCandidates(arg?: any): Promise<void> {
         progress.report({ message: 'Generating candidate options...' });
         const messages = getMultipleCandidatesPrompt(diff, {
           language,
-          emojiEnabled,
-          issueTag
+          issueTag,
+          detectedScope
         });
 
         const raw = await AIService.query(messages);

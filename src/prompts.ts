@@ -5,6 +5,7 @@ export interface PromptOptions {
   emojiEnabled?: boolean;
   commitStyle?: string;
   issueTag?: string | null;
+  detectedScope?: string | null;
 }
 
 /**
@@ -13,9 +14,9 @@ export interface PromptOptions {
 export const getMainCommitPrompt = async (options?: PromptOptions) => {
   const configManager = ConfigurationManager.getInstance();
   const language = options?.language || configManager.getConfig<string>(ConfigKeys.AI_COMMIT_LANGUAGE, 'English');
-  const emojiEnabled = options?.emojiEnabled ?? configManager.getConfig<boolean>(ConfigKeys.EMOJI_ENABLED, false);
   const commitStyle = options?.commitStyle || configManager.getConfig<string>(ConfigKeys.COMMIT_STYLE, 'conventional');
   const issueTag = options?.issueTag;
+  const detectedScope = options?.detectedScope;
 
   const customPrompt = configManager.getConfig<string>(ConfigKeys.AI_COMMIT_SYSTEM_PROMPT);
   if (customPrompt && customPrompt.trim().length > 0) {
@@ -23,10 +24,11 @@ export const getMainCommitPrompt = async (options?: PromptOptions) => {
   }
 
   const prefix = issueTag ? `[${issueTag}] ` : '';
+  const scopePlaceholder = detectedScope ? `(${detectedScope})` : '(<scope>)';
   let styleInstruction = '';
 
   if (commitStyle === 'simple') {
-    styleInstruction = `Generate a single concise one-line commit message without body. Format: ${prefix}<type>(<scope>): <subject>`;
+    styleInstruction = `Generate a single concise one-line commit message without body. Format: ${prefix}<type>${scopePlaceholder}: <subject>`;
   } else if (commitStyle === 'detailed') {
     styleInstruction = `Generate a structured commit message with a clear subject and concise bullet points explaining WHAT changed, WHY it changed, and technical details.`;
   } else {
@@ -34,6 +36,9 @@ export const getMainCommitPrompt = async (options?: PromptOptions) => {
   }
 
   const emojiRule = 'CRITICAL: Do NOT include any emojis or icons. Keep all output strictly professional and technical.';
+  const scopeRule = detectedScope
+    ? `Monorepo / Module Scope detected: "${detectedScope}". Use "${detectedScope}" as the scope: <type>(${detectedScope}): <subject>.`
+    : 'Infer an appropriate concise scope in English from modified file paths if applicable.';
 
   return [
     {
@@ -44,11 +49,12 @@ Rules:
 1. Output ONLY the raw commit message text. No markdown code blocks, quotes, introductions, or explanations.
 2. Subject line: maximum 60 characters, imperative present tense ("add" not "added"), no trailing period, written in ${language} (type and scope must remain standard English).
 3. ${emojiRule}
-4. ${issueTag ? `Include ticket tag '${issueTag}' in the subject.` : ''}
-5. ${styleInstruction}
+4. ${scopeRule}
+5. ${issueTag ? `Include ticket tag '${issueTag}' in the subject.` : ''}
+6. ${styleInstruction}
 
 Format:
-${prefix}<type>(<scope>): <subject>
+${prefix}<type>${scopePlaceholder}: <subject>
 
 - <bullet 1>
 - <bullet 2>
@@ -66,6 +72,7 @@ export const getMultipleCandidatesPrompt = (
 ) => {
   const language = options?.language || 'English';
   const issueTag = options?.issueTag ? `Ticket tag: ${options.issueTag}` : '';
+  const detectedScope = options?.detectedScope ? `Detected scope: "${options.detectedScope}" (use this scope in conventional and detailed candidates)` : '';
 
   return [
     {
@@ -74,21 +81,22 @@ export const getMultipleCandidatesPrompt = (
 Generate exactly 3 different clean, professional commit message candidates for the provided diff in JSON format.
 Language: ${language}.
 Rules: Strictly NO emojis, icons, or decorative fluff. Professional engineering standards.
+${detectedScope}
 ${issueTag}
 
 Output MUST be a valid JSON array of objects:
 [
   {
     "style": "Conventional",
-    "message": "feat(scope): subject\\n\\n- detail 1\\n- detail 2"
+    "message": "feat(${options?.detectedScope || 'scope'}): subject\\n\\n- detail 1\\n- detail 2"
   },
   {
     "style": "Concise",
-    "message": "feat(scope): concise single line subject"
+    "message": "feat(${options?.detectedScope || 'scope'}): concise single line subject"
   },
   {
     "style": "Detailed",
-    "message": "feat(scope): subject\\n\\n- detailed explanation of changes\\n- context and rationale"
+    "message": "feat(${options?.detectedScope || 'scope'}): subject\\n\\n- detailed explanation of changes\\n- context and rationale"
   }
 ]
 Output ONLY valid JSON.`
