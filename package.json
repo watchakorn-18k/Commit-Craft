@@ -1,6 +1,6 @@
 {
   "name": "commit-craft-ai",
-  "displayName": "CommitCraft AI",
+  "displayName": "CommitCraft — Smart Git AI Assistant",
   "description": "CommitCraft — Smart Git AI Assistant for Commit Messages, Pre-Commit Code Reviews, PR Descriptions & Branch Naming.",
   "version": "0.1.0",
   "engines": {
