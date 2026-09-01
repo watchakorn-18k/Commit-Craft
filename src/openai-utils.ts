@@ -39,7 +39,7 @@ export async function createOpenAIApiClient(providerId: string = 'openai'): Prom
 
   const defaultHeaders: Record<string, string> = {};
   if (providerId === 'openrouter') {
-    defaultHeaders['HTTP-Referer'] = 'https://github.com/sitoi/commitcraft';
+    defaultHeaders['HTTP-Referer'] = 'https://github.com/watchakorn-18k/Commit-Craft';
     defaultHeaders['X-Title'] = 'CommitCraft VSCode Extension';
   }
 
