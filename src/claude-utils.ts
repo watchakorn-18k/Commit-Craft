@@ -1,4 +1,3 @@
-import Anthropic from '@anthropic-ai/sdk';
 import { ConfigKeys, ConfigurationManager } from './config';
 import { Logger } from './logger';
 
@@ -13,6 +12,9 @@ export async function ClaudeAPI(messages: Array<{ role: string; content: string 
     if (!apiKey || apiKey.trim() === '') {
       throw new Error('Claude API Key is not configured.');
     }
+
+    // Lazy load Anthropic SDK to minimize baseline RAM
+    const { default: Anthropic } = await import('@anthropic-ai/sdk');
 
     const model = configManager.getActiveModel('claude');
     const temperature = configManager.getConfig<number>(

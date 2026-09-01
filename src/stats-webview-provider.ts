@@ -11,6 +11,7 @@ export class GitStatsWebviewViewProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = 'commitcraft.statsView';
   private _view?: vscode.WebviewView;
   private _disposables: vscode.Disposable[] = [];
+  private _updateTimer?: NodeJS.Timeout;
 
   constructor(private readonly _extensionUri: vscode.Uri) {}
 
@@ -29,29 +30,24 @@ export class GitStatsWebviewViewProvider implements vscode.WebviewViewProvider {
     // Update whenever view becomes visible
     webviewView.onDidChangeVisibility(() => {
       if (webviewView.visible) {
-        this.update();
+        this.scheduleUpdate(50);
       }
     }, null, this._disposables);
 
-    // Update when active editor changes
+    // Debounced update when active editor changes (prevents rapid tab-switch CPU/RAM spikes)
     vscode.window.onDidChangeActiveTextEditor(() => {
       if (this._view?.visible) {
-        this.update();
+        this.scheduleUpdate(600);
       }
     }, null, this._disposables);
 
-    // Initial render & retry
-    this.update();
-    setTimeout(() => {
-      if (this._view?.visible) {
-        this.update();
-      }
-    }, 800);
+    // Initial render
+    this.scheduleUpdate(100);
 
     webviewView.webview.onDidReceiveMessage(async (data) => {
       switch (data.command) {
         case 'refresh':
-          await this.update();
+          await this.update(true);
           break;
         case 'copyStandup':
           if (data.text) {
@@ -64,13 +60,24 @@ export class GitStatsWebviewViewProvider implements vscode.WebviewViewProvider {
           break;
         case 'syncBranch':
           await smartSyncBranch(undefined, data.baseBranch);
-          await this.update();
+          await this.update(true);
           break;
       }
     }, null, this._disposables);
   }
 
-  public async update() {
+  public scheduleUpdate(delayMs: number = 300) {
+    if (this._updateTimer) {
+      clearTimeout(this._updateTimer);
+    }
+    this._updateTimer = setTimeout(() => {
+      if (this._view?.visible) {
+        this.update(false);
+      }
+    }, delayMs);
+  }
+
+  public async update(forceRefresh: boolean = false) {
     if (!this._view) {
       return;
     }
@@ -82,8 +89,10 @@ export class GitStatsWebviewViewProvider implements vscode.WebviewViewProvider {
       // Fallback
     }
 
-    const stats = repo ? await getRepoGitStats(repo, 80) : null;
-    this._view.webview.html = this._getHtml(stats);
+    const stats = repo ? await getRepoGitStats(repo, 80, forceRefresh) : null;
+    if (this._view) {
+      this._view.webview.html = this._getHtml(stats);
+    }
   }
 
   public dispose() {

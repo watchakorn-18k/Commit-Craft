@@ -1,4 +1,4 @@
-import { ChatCompletionMessageParam } from 'openai/resources';
+import type { ChatCompletionMessageParam } from 'openai/resources';
 import { ConfigKeys, ConfigurationManager, PROVIDERS } from './config';
 import { OpenAICompatibleAPI, ResponsesAPI } from './openai-utils';
 import { GeminiAPI } from './gemini-utils';

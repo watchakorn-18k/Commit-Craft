@@ -1,13 +1,12 @@
-import OpenAI from 'openai';
-import { ChatCompletionMessageParam } from 'openai/resources';
-import { ReasoningEffort } from 'openai/resources/shared';
+import type { ChatCompletionMessageParam } from 'openai/resources';
+import type { ReasoningEffort } from 'openai/resources/shared';
 import { ConfigKeys, ConfigurationManager, PROVIDERS } from './config';
 import { Logger } from './logger';
 
 /**
  * Creates and returns an OpenAI client instance configured for the specified provider.
  */
-export async function createOpenAIApiClient(providerId: string = 'openai'): Promise<OpenAI> {
+export async function createOpenAIApiClient(providerId: string = 'openai'): Promise<any> {
   const configManager = ConfigurationManager.getInstance();
   const provider = PROVIDERS[providerId] || PROVIDERS.openai;
 
@@ -47,6 +46,9 @@ export async function createOpenAIApiClient(providerId: string = 'openai'): Prom
   const defaultQuery = (providerId === 'openai' && azureVersion)
     ? { 'api-version': azureVersion }
     : undefined;
+
+  // Lazy load OpenAI SDK on demand
+  const { default: OpenAI } = await import('openai');
 
   return new OpenAI({
     apiKey: apiKey || 'dummy',

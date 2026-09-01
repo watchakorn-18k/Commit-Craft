@@ -1,4 +1,3 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { ConfigKeys, ConfigurationManager } from './config';
 import { Logger } from './logger';
 
@@ -13,6 +12,9 @@ export async function GeminiAPI(messages: Array<{ role: string; content: string 
     if (!apiKey) {
       throw new Error('Gemini API Key is not configured.');
     }
+
+    // Lazy load SDK to save initial RAM
+    const { GoogleGenerativeAI } = await import('@google/generative-ai');
 
     const modelName = configManager.getActiveModel('gemini');
     const temperature = configManager.getConfig<number>(ConfigKeys.GEMINI_TEMPERATURE, 0.7);

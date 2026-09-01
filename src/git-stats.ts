@@ -62,15 +62,44 @@ export interface GitStatsSummary {
   latestCommit: { hash: string; message: string; author: string; date: string } | null;
 }
 
+// In-memory lightweight cache to prevent excessive git subprocess spawning and RAM churn
+interface CachedStats {
+  timestamp: number;
+  data: GitStatsSummary;
+}
+const statsCache = new Map<string, CachedStats>();
+const STATS_CACHE_TTL_MS = 6000; // 6 seconds
+
+/**
+ * Clears cached git stats (call after commit, branch change, or manual refresh)
+ */
+export function clearGitStatsCache(rootPath?: string): void {
+  if (rootPath) {
+    statsCache.delete(rootPath);
+  } else {
+    statsCache.clear();
+  }
+}
+
 /**
  * Analyze recent Git commits, branch divergence, and contributor leaderboard.
  */
-export async function getRepoGitStats(repo: any, sampleSize: number = 80): Promise<GitStatsSummary | null> {
+export async function getRepoGitStats(
+  repo: any,
+  sampleSize: number = 80,
+  forceRefresh: boolean = false
+): Promise<GitStatsSummary | null> {
   try {
     const rootPath =
       repo?.rootUri?.fsPath || vscode.workspace.workspaceFolders?.[0].uri.fsPath;
     if (!rootPath) {
       return null;
+    }
+
+    const nowTime = Date.now();
+    const cached = statsCache.get(rootPath);
+    if (!forceRefresh && cached && nowTime - cached.timestamp < STATS_CACHE_TTL_MS) {
+      return cached.data;
     }
 
     const git = simpleGit(rootPath);
@@ -280,7 +309,7 @@ export async function getRepoGitStats(repo: any, sampleSize: number = 80): Promi
         }
       : null;
 
-    return {
+    const summary: GitStatsSummary = {
       currentBranch,
       userName,
       userEmail,
@@ -296,6 +325,13 @@ export async function getRepoGitStats(repo: any, sampleSize: number = 80): Promi
       weeklyActivity: past7Days,
       latestCommit: latest
     };
+
+    statsCache.set(rootPath, {
+      timestamp: Date.now(),
+      data: summary
+    });
+
+    return summary;
   } catch (error) {
     Logger.error('Failed to compute Git repository statistics:', error);
     return null;
