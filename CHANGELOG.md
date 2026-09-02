@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-09-02
+
+### Added
+- **Git Visual Insights & Interactive Donut Chart**: Visual commit breakdown by type, 7-day activity heatmap, team leaderboard, and code impact matrix.
+- **AI Git Blame Line Storyteller**: Understand why specific lines were changed with contextual AI explanations.
+- **AI PR Pre-Review Simulator**: Simulate automated code reviewer feedback directly within VS Code before creating PRs.
+- **Branch Divergence Meter & 1-Click Rebase/Sync**: Real-time ahead/behind tracking with interactive rebase and sync buttons.
+- **Git Tag & Release Auto-Draft**: Automated semantic tag recommendation and GitHub/GitLab release notes generation.
+- **AI Git Bisect Bug Tracker**: Interactive bug hunting workflow with AI test suggestions.
+- **Clean Ghost Branches**: 1-click detection and cleanup of stale local branches whose remotes were deleted.
+- **AI Squash & Rebase Summarizer**: Aggregate multiple branch commits into a clean conventional commit.
+- **Instant TH to EN Conventional Commit Translator**: Translate commit messages to English conventional commits in 1 click.
+
+### Changed & Improved
+- Set English as default UI display while honoring user language configurations.
+- Optimized memory usage, debounced Git queries, and lazy-loaded heavy AI SDKs.
+- Modernized dashboard design with clean SVG vector icons.
+- Enhanced workspace repository discovery, auto-activation, and sidebar auto-refresh.
+
 ## [0.1.0] - 2026-09-01
 
 ### Added

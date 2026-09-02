@@ -2,7 +2,7 @@
   "name": "commit-craft-ai",
   "displayName": "CommitCraft — Smart Git AI Assistant",
   "description": "CommitCraft — Smart Git AI Assistant for Commit Messages, Pre-Commit Code Reviews, PR Descriptions & Branch Naming.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "engines": {
     "node": ">=16",
     "vscode": "^1.77.0"
@@ -418,7 +418,12 @@
           "type": "string",
           "default": "en",
           "description": "CommitCraft UI Interface Language (English or ภาษาไทย)",
-          "enum": ["en", "th", "zh", "ja"],
+          "enum": [
+            "en",
+            "th",
+            "zh",
+            "ja"
+          ],
           "enumDescriptions": [
             "English (Default)",
             "ภาษาไทย (Thai)",
@@ -504,7 +509,10 @@
           "type": "string",
           "default": "completion",
           "description": "OpenAI API Type: Chat Completions or Responses API",
-          "enum": ["completion", "response"],
+          "enum": [
+            "completion",
+            "response"
+          ],
           "enumDescriptions": [
             "Chat Completions API (default)",
             "Responses API (supports reasoning models)"
@@ -514,13 +522,22 @@
           "type": "string",
           "default": "medium",
           "description": "Reasoning effort for Responses API",
-          "enum": ["minimal", "low", "medium", "high"]
+          "enum": [
+            "minimal",
+            "low",
+            "medium",
+            "high"
+          ]
         },
         "commitcraft.OPENAI_TEXT_VERBOSITY": {
           "type": "string",
           "default": "medium",
           "description": "Output verbosity for Responses API",
-          "enum": ["low", "medium", "high"]
+          "enum": [
+            "low",
+            "medium",
+            "high"
+          ]
         },
         "commitcraft.AZURE_API_VERSION": {
           "type": "string",

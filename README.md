@@ -1,4 +1,4 @@
-# CommitCraft (v0.1.0)
+# CommitCraft (v0.2.0)
 
 <div align="center">
   <img src="./images/logo.png" alt="CommitCraft Logo" width="128" />
@@ -129,7 +129,7 @@ Settings can be managed visually in the **Settings UI** (`Cmd+,` &rarr; search `
 
 To install manually from the VSIX package:
 ```bash
-code --install-extension commitcraft-0.1.0.vsix
+code --install-extension commitcraft-0.2.0.vsix
 ```
 
 ---
